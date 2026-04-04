@@ -178,10 +178,6 @@ async function pesquisarBandas(saveTerm = true) {
     return;
   }
 
-  if (saveTerm) {
-    addToHistory(termo);
-  }
-
   statusText.textContent = "Pesquisando...";
   bandsGrid.innerHTML = `<div class="loading">Buscando resultados musicais...</div>`;
 
@@ -198,6 +194,10 @@ async function pesquisarBandas(saveTerm = true) {
     const bandasConvertidas = ultimoResultadoBruto.map(montarBanda);
     preencherFiltroGenero(bandasConvertidas);
     aplicarFiltroGenero();
+
+    if (saveTerm && termo.length >= 2 && ultimoResultadoBruto.length > 0) {
+      addToHistory(termo);
+    }
   } catch (erro) {
     console.error("Erro ao buscar bandas:", erro);
     ultimoResultadoBruto = [];
@@ -210,17 +210,18 @@ function pesquisarComDebounce() {
   clearTimeout(debounceTimer);
 
   debounceTimer = setTimeout(() => {
-    if (searchInput.value.trim().length >= 2) {
-      pesquisarBandas(true);
-    } else if (searchInput.value.trim().length === 0) {
+    const termo = searchInput.value.trim();
+
+    if (termo.length >= 2) {
+      pesquisarBandas(false);
+    } else if (termo.length === 0) {
       statusText.textContent = "Pesquise algo para começar.";
       bandsGrid.innerHTML = "";
       genreFilter.innerHTML = `<option value="todos">Todos os gêneros</option>`;
       ultimoResultadoBruto = [];
     }
-  }, 500);
+  }, 700);
 }
-
 function renderHistory() {
   const history = getHistory();
 
