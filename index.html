@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wikiband</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topo">
+    <h1>Wikiband</h1>
+    <p>Wikiband, pesquise bandas.</p>
+  </header>
+
+  <section class="search-section">
+    <div class="search-box">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Digite o nome de uma banda ou artista..."
+      />
+      <button id="searchButton">Procurar</button>
+    </div>
+  </section>
+
+  <main class="container">
+    <p class="status" id="status">Procure alguma banda para começarmos.</p>
+    <div class="bands-grid" id="bandsGrid"></div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
