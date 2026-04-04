@@ -1,5 +1,6 @@
 const searchInput = document.getElementById("searchInput");
 const searchButton = document.getElementById("searchButton");
+const genreFilter = document.getElementById("genreFilter");
 const bandsGrid = document.getElementById("bandsGrid");
 const statusText = document.getElementById("status");
 const historyList = document.getElementById("historyList");
@@ -8,6 +9,9 @@ const clearHistoryButton = document.getElementById("clearHistoryButton");
 const clearFavoritesButton = document.getElementById("clearFavoritesButton");
 
 const PLACEHOLDER_IMAGEM = "https://via.placeholder.com/600x400?text=Sem+Imagem";
+
+let ultimoResultadoBruto = [];
+let debounceTimer = null;
 
 function getHistory() {
   return JSON.parse(localStorage.getItem("wikiband_history")) || [];
@@ -48,7 +52,7 @@ function toggleFavorite(banda) {
 
   saveFavorites(favorites);
   renderFavorites();
-  pesquisarBandas(false);
+  aplicarFiltroGenero();
 }
 
 function abrirDetalhes(banda) {
@@ -56,10 +60,7 @@ function abrirDetalhes(banda) {
   window.open("banda.html", "_blank");
 }
 
-function criarCard(item) {
-  const card = document.createElement("div");
-  card.className = "band-card";
-
+function montarBanda(item) {
   const imagem = item.artworkUrl100
     ? item.artworkUrl100.replace("100x100bb", "600x600bb")
     : PLACEHOLDER_IMAGEM;
@@ -72,7 +73,7 @@ function criarCard(item) {
     ? new Date(item.releaseDate).getFullYear()
     : "Ano não informado";
 
-  const banda = {
+  return {
     nome,
     genero,
     pais,
@@ -82,20 +83,25 @@ function criarCard(item) {
     spotifyLink: `https://open.spotify.com/search/${encodeURIComponent(nome)}`,
     youtubeLink: `https://www.youtube.com/results?search_query=${encodeURIComponent(nome)}`
   };
+}
+
+function criarCard(banda) {
+  const card = document.createElement("div");
+  card.className = "band-card";
 
   card.innerHTML = `
-    <img src="${imagem}" class="band-image" alt="${nome}">
+    <img src="${banda.imagem}" class="band-image" alt="${banda.nome}">
     <div class="band-content">
-      <h3>${nome}</h3>
-      <span class="tag">${genero}</span>
-      <p><strong>País:</strong> ${pais}</p>
-      <p><strong>Álbum:</strong> ${album}</p>
-      <p><strong>Lançamento:</strong> ${lancamento}</p>
+      <h3>${banda.nome}</h3>
+      <span class="tag">${banda.genero}</span>
+      <p><strong>País:</strong> ${banda.pais}</p>
+      <p><strong>Álbum:</strong> ${banda.album}</p>
+      <p><strong>Lançamento:</strong> ${banda.lancamento}</p>
 
       <div class="card-actions">
         <button class="primary-btn detalhes-btn">Detalhes</button>
-        <button class="secondary-btn favorite-btn ${isFavorite(nome) ? "active" : ""}">
-          ${isFavorite(nome) ? "Remover favorito" : "Favoritar"}
+        <button class="secondary-btn favorite-btn ${isFavorite(banda.nome) ? "active" : ""}">
+          ${isFavorite(banda.nome) ? "Remover favorito" : "Favoritar"}
         </button>
       </div>
     </div>
@@ -113,6 +119,25 @@ function criarCard(item) {
   return card;
 }
 
+function preencherFiltroGenero(listaBandas) {
+  const generoAtual = genreFilter.value;
+
+  const generos = [...new Set(listaBandas.map((banda) => banda.genero).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  genreFilter.innerHTML = `<option value="todos">Todos os gêneros</option>`;
+
+  generos.forEach((genero) => {
+    const option = document.createElement("option");
+    option.value = genero;
+    option.textContent = genero;
+    genreFilter.appendChild(option);
+  });
+
+  const generoExiste = generos.includes(generoAtual);
+  genreFilter.value = generoExiste ? generoAtual : "todos";
+}
+
 function renderizarResultados(lista) {
   bandsGrid.innerHTML = "";
 
@@ -124,9 +149,22 @@ function renderizarResultados(lista) {
 
   statusText.textContent = `${lista.length} resultado(s) encontrado(s).`;
 
-  lista.forEach((item) => {
-    bandsGrid.appendChild(criarCard(item));
+  lista.forEach((banda) => {
+    bandsGrid.appendChild(criarCard(banda));
   });
+}
+
+function aplicarFiltroGenero() {
+  const generoSelecionado = genreFilter.value;
+
+  const bandasConvertidas = ultimoResultadoBruto.map(montarBanda);
+
+  const listaFiltrada =
+    generoSelecionado === "todos"
+      ? bandasConvertidas
+      : bandasConvertidas.filter((banda) => banda.genero === generoSelecionado);
+
+  renderizarResultados(listaFiltrada);
 }
 
 async function pesquisarBandas(saveTerm = true) {
@@ -135,6 +173,8 @@ async function pesquisarBandas(saveTerm = true) {
   if (!termo) {
     statusText.textContent = "Digite algo para pesquisar.";
     bandsGrid.innerHTML = "";
+    genreFilter.innerHTML = `<option value="todos">Todos os gêneros</option>`;
+    ultimoResultadoBruto = [];
     return;
   }
 
@@ -148,17 +188,37 @@ async function pesquisarBandas(saveTerm = true) {
   try {
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(
       termo
-    )}&media=music&entity=album&limit=18`;
+    )}&media=music&entity=album&limit=24`;
 
     const resposta = await fetch(url);
     const dados = await resposta.json();
 
-    renderizarResultados(dados.results || []);
+    ultimoResultadoBruto = dados.results || [];
+
+    const bandasConvertidas = ultimoResultadoBruto.map(montarBanda);
+    preencherFiltroGenero(bandasConvertidas);
+    aplicarFiltroGenero();
   } catch (erro) {
     console.error("Erro ao buscar bandas:", erro);
+    ultimoResultadoBruto = [];
     bandsGrid.innerHTML = `<p class="vazio">Não foi possível carregar os resultados agora.</p>`;
     statusText.textContent = "Erro ao carregar resultados.";
   }
+}
+
+function pesquisarComDebounce() {
+  clearTimeout(debounceTimer);
+
+  debounceTimer = setTimeout(() => {
+    if (searchInput.value.trim().length >= 2) {
+      pesquisarBandas(true);
+    } else if (searchInput.value.trim().length === 0) {
+      statusText.textContent = "Pesquise algo para começar.";
+      bandsGrid.innerHTML = "";
+      genreFilter.innerHTML = `<option value="todos">Todos os gêneros</option>`;
+      ultimoResultadoBruto = [];
+    }
+  }, 500);
 }
 
 function renderHistory() {
@@ -204,11 +264,16 @@ function renderFavorites() {
     item.innerHTML = `
       <strong>${banda.nome}</strong>
       <p>${banda.genero}</p>
-      <button>Ver detalhes</button>
+      <button class="ver-favorito">Ver detalhes</button>
+      <button class="remover-favorito danger mini-btn">Remover</button>
     `;
 
-    item.querySelector("button").addEventListener("click", () => {
+    item.querySelector(".ver-favorito").addEventListener("click", () => {
       abrirDetalhes(banda);
+    });
+
+    item.querySelector(".remover-favorito").addEventListener("click", () => {
+      toggleFavorite(banda);
     });
 
     favoritesList.appendChild(item);
@@ -217,11 +282,16 @@ function renderFavorites() {
 
 searchButton.addEventListener("click", () => pesquisarBandas(true));
 
+searchInput.addEventListener("input", pesquisarComDebounce);
+
 searchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
+    clearTimeout(debounceTimer);
     pesquisarBandas(true);
   }
 });
+
+genreFilter.addEventListener("change", aplicarFiltroGenero);
 
 clearHistoryButton.addEventListener("click", () => {
   localStorage.removeItem("wikiband_history");
@@ -231,9 +301,7 @@ clearHistoryButton.addEventListener("click", () => {
 clearFavoritesButton.addEventListener("click", () => {
   localStorage.removeItem("wikiband_favorites");
   renderFavorites();
-  if (searchInput.value.trim()) {
-    pesquisarBandas(false);
-  }
+  aplicarFiltroGenero();
 });
 
 renderHistory();

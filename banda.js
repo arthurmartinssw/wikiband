@@ -22,7 +22,7 @@ if (!banda) {
       <p><strong>Ano de lançamento:</strong> ${banda.lancamento}</p>
       <p>
         A Wikiband encontrou este artista a partir da sua busca musical.
-        Aqui você pode usar os atalhos para continuar explorando em outras plataformas.
+        Aqui você pode continuar sua viagem sonora em outras plataformas.
       </p>
 
       <div class="links-externos">

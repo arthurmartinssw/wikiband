@@ -27,9 +27,17 @@
         type="text"
         id="searchInput"
         placeholder="Digite o nome de uma banda ou artista..."
+        autocomplete="off"
       />
       <button id="searchButton">Pesquisar</button>
     </div>
+
+    <div class="filters-row">
+      <select id="genreFilter">
+        <option value="todos">Todos os gêneros</option>
+      </select>
+    </div>
+
     <p class="status" id="status">Pesquise algo para começar.</p>
   </section>
 
