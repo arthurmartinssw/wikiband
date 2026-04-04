@@ -1,5 +1,4 @@
 const detalheContainer = document.getElementById("detalheContainer");
-
 const banda = JSON.parse(sessionStorage.getItem("bandaSelecionada"));
 
 if (!banda) {
@@ -11,7 +10,7 @@ if (!banda) {
     </div>
   `;
 } else {
-  document.title = banda.nome;
+  document.title = `${banda.nome} | Wikiband`;
 
   detalheContainer.innerHTML = `
     <img src="${banda.imagem}" class="detalhe-imagem" alt="${banda.nome}">
@@ -21,11 +20,16 @@ if (!banda) {
       <p><strong>País:</strong> ${banda.pais}</p>
       <p><strong>Álbum em destaque:</strong> ${banda.album}</p>
       <p><strong>Ano de lançamento:</strong> ${banda.lancamento}</p>
-      ${
-        banda.link
-          ? `<p><a class="link-externo" href="${banda.link}" target="_blank">Abrir página oficial no catálogo</a></p>`
-          : ""
-      }
+      <p>
+        A Wikiband encontrou este artista a partir da sua busca musical.
+        Aqui você pode usar os atalhos para continuar explorando em outras plataformas.
+      </p>
+
+      <div class="links-externos">
+        <a class="link-externo" href="${banda.spotifyLink}" target="_blank">Abrir no Spotify</a>
+        <a class="link-externo" href="${banda.youtubeLink}" target="_blank">Ver no YouTube</a>
+      </div>
+
       <a href="index.html" class="voltar">Voltar</a>
     </div>
   `;

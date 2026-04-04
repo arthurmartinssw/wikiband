@@ -8,8 +8,17 @@
 </head>
 <body>
   <header class="topo">
-    <h1>Wikiband</h1>
-    <p>Wikiband, pesquise bandas.</p>
+    <div class="topo-conteudo">
+      <div>
+        <h1>Wikiband</h1>
+        <p>Pesquise bandas e artistas reais, salve favoritos e explore novos sons.</p>
+      </div>
+
+      <nav class="menu">
+        <a href="index.html">Início</a>
+        <a href="sobre.html">Sobre a Wikiband</a>
+      </nav>
+    </div>
   </header>
 
   <section class="search-section">
@@ -19,13 +28,36 @@
         id="searchInput"
         placeholder="Digite o nome de uma banda ou artista..."
       />
-      <button id="searchButton">Procurar</button>
+      <button id="searchButton">Pesquisar</button>
     </div>
+    <p class="status" id="status">Pesquise algo para começar.</p>
   </section>
 
   <main class="container">
-    <p class="status" id="status">Procure alguma banda para começarmos.</p>
-    <div class="bands-grid" id="bandsGrid"></div>
+    <section class="painel">
+      <div class="painel-header">
+        <h2>Resultados</h2>
+      </div>
+      <div class="bands-grid" id="bandsGrid"></div>
+    </section>
+
+    <aside class="sidebar">
+      <section class="painel">
+        <div class="painel-header">
+          <h2>Histórico</h2>
+          <button class="mini-btn danger" id="clearHistoryButton">Limpar</button>
+        </div>
+        <div id="historyList" class="lista-lateral"></div>
+      </section>
+
+      <section class="painel">
+        <div class="painel-header">
+          <h2>Favoritos</h2>
+          <button class="mini-btn danger" id="clearFavoritesButton">Limpar</button>
+        </div>
+        <div id="favoritesList" class="lista-lateral"></div>
+      </section>
+    </aside>
   </main>
 
   <script src="script.js"></script>
