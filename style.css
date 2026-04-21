@@ -184,6 +184,7 @@ body {
   background: linear-gradient(180deg, #181824, #141420);
   border: 1px solid #2d2d3d;
   border-radius: 20px;
+  cursor: pointer;
   overflow: hidden;
   transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }

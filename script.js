@@ -110,6 +110,11 @@ function criarCard(banda) {
   const detalhesBtn = card.querySelector(".detalhes-btn");
   const favoriteBtn = card.querySelector(".favorite-btn");
 
+  card.addEventListener("click", (event) => {
+    if (event.target.closest("button")) return;
+    abrirDetalhes(banda);
+  });
+
   detalhesBtn.addEventListener("click", () => abrirDetalhes(banda));
 
   favoriteBtn.addEventListener("click", () => {
