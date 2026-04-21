@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Favoritos | Wikiband</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topo topo-menor">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Favoritos</h1>
+        <p>Seus álbuns e bandas salvos em um só lugar.</p>
+      </div>
+
+      <nav class="menu">
+        <a href="index.html">Início</a>
+        <a href="favoritos.html">Favoritos</a>
+        <a href="sobre.html">Sobre a Wikiband</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="favoritos-container">
+    <section class="painel">
+      <div class="painel-header">
+        <h2>Álbuns favoritos</h2>
+        <button class="mini-btn danger" id="clearAlbumFavoritesButton">Limpar</button>
+      </div>
+      <div class="favoritos-grid" id="albumFavoritesGrid"></div>
+    </section>
+
+    <section class="painel">
+      <div class="painel-header">
+        <h2>Bandas favoritas</h2>
+        <button class="mini-btn danger" id="clearBandFavoritesPageButton">Limpar</button>
+      </div>
+      <div class="favoritos-grid" id="bandFavoritesGrid"></div>
+    </section>
+  </main>
+
+  <script src="preview-player.js"></script>
+  <script src="favoritos.js"></script>
+</body>
+</html>

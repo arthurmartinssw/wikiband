@@ -1,46 +1,13 @@
 const detalheContainer = document.getElementById("detalheContainer");
 const bandaSelecionada = JSON.parse(sessionStorage.getItem("bandaSelecionada"));
 
-function normalizarPreviewUrl(url) {
-  return url ? url.replace(/^http:/, "https:") : "";
-}
-
-async function buscarPreviewAlbum(banda) {
-  const url = `https://itunes.apple.com/lookup?id=${encodeURIComponent(
-    banda.albumId
-  )}&entity=song`;
-  const resposta = await fetch(url);
-  const dados = await resposta.json();
-  const faixa = (dados.results || []).find(
-    (item) => item.wrapperType === "track" && item.previewUrl
-  );
-
-  if (!faixa) {
-    return null;
-  }
-
-  return {
-    nome: faixa.trackName || banda.album,
-    url: normalizarPreviewUrl(faixa.previewUrl)
-  };
-}
-
-async function tocarPreviewDetalhe(banda) {
-  const previewBtn = document.getElementById("detailPreviewButton");
-  const previewArea = document.getElementById("detailPreviewArea");
-  const audioAtual = previewArea.querySelector("audio");
-
-  if (audioAtual && !audioAtual.paused) {
-    audioAtual.pause();
-    return;
-  }
-
+async function tocarPrimeiraPreview(banda, previewBtn, previewArea) {
   previewBtn.disabled = true;
   previewBtn.textContent = "Carregando...";
   previewArea.innerHTML = `<p class="preview-status">Buscando prévia...</p>`;
 
   try {
-    const preview = await buscarPreviewAlbum(banda);
+    const preview = await WikiPreview.getFirstPreview(banda);
 
     if (!preview) {
       previewArea.innerHTML = `<p class="preview-status">Prévia indisponível para este álbum.</p>`;
@@ -48,40 +15,81 @@ async function tocarPreviewDetalhe(banda) {
       return;
     }
 
-    previewArea.innerHTML = `
-      <p class="preview-status"><strong>Prévia:</strong> ${preview.nome}</p>
-      <audio class="preview-player" controls src="${preview.url}"></audio>
-    `;
-
-    const audio = previewArea.querySelector("audio");
-
-    audio.addEventListener("play", () => {
-      previewBtn.textContent = "Pausar prévia";
-    });
-
-    audio.addEventListener("pause", () => {
-      previewBtn.textContent = "Tocar prévia";
-    });
-
-    audio.addEventListener("ended", () => {
-      previewBtn.textContent = "Tocar prévia";
-    });
-
+    previewArea.innerHTML = `<p class="preview-status"><strong>Prévia:</strong> ${preview.nome}</p>`;
     previewBtn.disabled = false;
-    const playPromise = audio.play();
-
-    if (playPromise) {
-      playPromise.catch((erroPlay) => {
-        console.warn("O navegador bloqueou o play automático:", erroPlay);
-        previewBtn.textContent = "Tocar prévia";
-      });
-    }
+    WikiPreview.playTrack(preview, banda, previewBtn);
   } catch (erro) {
     console.error("Erro ao carregar prévia:", erro);
     previewArea.innerHTML = `<p class="preview-status">Não foi possível carregar a prévia agora.</p>`;
     previewBtn.textContent = "Tocar prévia";
   } finally {
     previewBtn.disabled = false;
+  }
+}
+
+function criarLinhaFaixa(faixa, banda) {
+  const row = document.createElement("div");
+  row.className = "track-row";
+
+  const number = document.createElement("span");
+  number.className = "track-number";
+  number.textContent = String(faixa.numero).padStart(2, "0");
+
+  const info = document.createElement("div");
+  info.className = "track-info";
+
+  const title = document.createElement("strong");
+  title.textContent = faixa.nome;
+
+  const meta = document.createElement("span");
+  meta.textContent = `${faixa.artista} • ${WikiPreview.formatDuration(faixa.duracaoMs)}`;
+
+  info.append(title, meta);
+
+  const button = document.createElement("button");
+  button.className = "track-preview-btn";
+  button.type = "button";
+  button.dataset.previewIdleText = "Tocar";
+  button.dataset.previewPlayingText = "Pausar";
+
+  if (faixa.previewUrl) {
+    button.textContent = "Tocar";
+    button.addEventListener("click", () => {
+      WikiPreview.playTrack(faixa, banda, button);
+    });
+  } else {
+    button.textContent = "Sem prévia";
+    button.disabled = true;
+  }
+
+  row.append(number, info, button);
+  return row;
+}
+
+async function carregarFaixasAlbum(banda) {
+  const trackList = document.getElementById("trackList");
+  const trackCount = document.getElementById("trackCount");
+
+  trackList.innerHTML = `<p class="loading">Carregando faixas...</p>`;
+  trackCount.textContent = "";
+
+  try {
+    const faixas = await WikiPreview.getAlbumTracks(banda);
+
+    if (!faixas.length) {
+      trackList.innerHTML = `<p class="vazio">Nenhuma faixa encontrada para este álbum.</p>`;
+      return;
+    }
+
+    trackCount.textContent = `${faixas.length} faixa(s)`;
+    trackList.innerHTML = "";
+
+    faixas.forEach((faixa) => {
+      trackList.appendChild(criarLinhaFaixa(faixa, banda));
+    });
+  } catch (erro) {
+    console.error("Erro ao carregar faixas:", erro);
+    trackList.innerHTML = `<p class="vazio">Não foi possível carregar as faixas agora.</p>`;
   }
 }
 
@@ -117,11 +125,26 @@ if (!bandaSelecionada) {
 
       <div class="preview-area" id="detailPreviewArea" aria-live="polite"></div>
 
+      <section class="tracks-section">
+        <div class="tracks-header">
+          <h2>Faixas do álbum</h2>
+          <span id="trackCount"></span>
+        </div>
+        <div class="tracks-list" id="trackList"></div>
+      </section>
+
       <a href="index.html" class="voltar">Voltar para a busca</a>
     </div>
   `;
 
-  document.getElementById("detailPreviewButton").addEventListener("click", () => {
-    tocarPreviewDetalhe(bandaSelecionada);
+  const previewBtn = document.getElementById("detailPreviewButton");
+  const previewArea = document.getElementById("detailPreviewArea");
+
+  previewBtn.dataset.previewIdleText = "Tocar prévia";
+  previewBtn.dataset.previewPlayingText = "Pausar prévia";
+  previewBtn.addEventListener("click", () => {
+    tocarPrimeiraPreview(bandaSelecionada, previewBtn, previewArea);
   });
+
+  carregarFaixasAlbum(bandaSelecionada);
 }
