@@ -573,6 +573,15 @@ body.has-mini-player {
   padding: 0 20px 120px;
 }
 
+.test-pagina {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 20px 120px;
+    display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .favoritos-container {
   display: flex;
   flex-direction: column;
