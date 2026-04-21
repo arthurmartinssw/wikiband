@@ -99,7 +99,6 @@ function criarCard(banda) {
       <p><strong>Lançamento:</strong> ${banda.lancamento}</p>
 
       <div class="card-actions">
-        <button class="primary-btn detalhes-btn">Detalhes</button>
         <button class="secondary-btn favorite-btn ${isFavorite(banda.nome) ? "active" : ""}">
           ${isFavorite(banda.nome) ? "Remover favorito" : "Favoritar"}
         </button>
@@ -107,7 +106,6 @@ function criarCard(banda) {
     </div>
   `;
 
-  const detalhesBtn = card.querySelector(".detalhes-btn");
   const favoriteBtn = card.querySelector(".favorite-btn");
 
   card.addEventListener("click", (event) => {
@@ -115,7 +113,6 @@ function criarCard(banda) {
     abrirDetalhes(banda);
   });
 
-  detalhesBtn.addEventListener("click", () => abrirDetalhes(banda));
 
   favoriteBtn.addEventListener("click", () => {
     toggleFavorite(banda);
