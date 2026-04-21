@@ -8,8 +8,12 @@
       return `Estou explorando ${item.nome} no Wikiband. ${item.spotifyLink}`;
     }
 
-    return `Estou ouvindo o álbum "${item.album}" de ${item.nome} no Wikiband. ${item.spotifyLink}`;
+    if (item.tipo === "album") {
+
+      return `Estou ouvindo o álbum "${item.album}" de ${item.nome} no Wikiband. ${item.spotifyLink}`;
+    }
   }
+
 
   async function copiarTexto(texto) {
     if (navigator.clipboard) {
