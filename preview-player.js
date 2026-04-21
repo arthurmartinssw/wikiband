@@ -119,7 +119,7 @@ const WikiPreview = (() => {
       nome: item.trackName || `Faixa ${index + 1}`,
       artista: item.artistName || album.nome,
       album: item.collectionName || album.album,
-      numero: item.trackNumber || index + 1,
+      numero: index + 1,
       duracaoMs: item.trackTimeMillis || 0,
       previewUrl: normalizarPreviewUrl(item.previewUrl),
       imagem: melhorarImagem(item.artworkUrl100 || album.imagem)
