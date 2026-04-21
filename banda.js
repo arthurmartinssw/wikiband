@@ -1,6 +1,57 @@
 const detalheContainer = document.getElementById("detalheContainer");
 const bandaSelecionada = JSON.parse(sessionStorage.getItem("bandaSelecionada"));
 
+function montarTextoCompartilhar(banda) {
+  const foco = banda.musica
+    ? `"${banda.musica}", de ${banda.nome}`
+    : `o álbum "${banda.album}", de ${banda.nome}`;
+
+  return `Estou ouvindo ${foco} no Wikiband. ${banda.spotifyLink || banda.youtubeLink}`;
+}
+
+async function copiarTexto(texto) {
+  if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(texto);
+      return;
+    } catch (erro) {
+      console.warn("Clipboard API indisponível, usando fallback:", erro);
+    }
+  }
+
+  const campo = document.createElement("textarea");
+  campo.value = texto;
+  campo.setAttribute("readonly", "");
+  campo.style.position = "fixed";
+  campo.style.opacity = "0";
+  document.body.appendChild(campo);
+  campo.select();
+  document.execCommand("copy");
+  campo.remove();
+}
+
+async function compartilharDetalhe(banda, botao) {
+  const texto = montarTextoCompartilhar(banda);
+  const textoOriginal = botao.textContent;
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: "Wikiband",
+        text: texto
+      });
+    } else {
+      await copiarTexto(texto);
+      botao.textContent = "Copiado";
+      setTimeout(() => {
+        botao.textContent = textoOriginal;
+      }, 1400);
+    }
+  } catch (erro) {
+    console.warn("Compartilhamento cancelado ou indisponível:", erro);
+  }
+}
+
 async function tocarPrimeiraPreview(banda, previewBtn, previewArea) {
   previewBtn.disabled = true;
   previewBtn.textContent = "Carregando...";
@@ -66,6 +117,53 @@ function criarLinhaFaixa(faixa, banda) {
   return row;
 }
 
+function criarParticipanteCard(participante) {
+  const card = document.createElement("article");
+  card.className = "member-card";
+
+  const iniciais = participante.name
+    .split(" ")
+    .map((parte) => parte[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  card.innerHTML = `
+    <div class="member-avatar">${iniciais}</div>
+    <div class="member-info">
+      <h3>${participante.name}</h3>
+      <p><strong>${participante.role}</strong></p>
+      <p>${participante.bio}</p>
+      <a href="${participante.spotifyUrl}" target="_blank" rel="noopener noreferrer">Spotify</a>
+    </div>
+  `;
+
+  return card;
+}
+
+function renderParticipantes(banda) {
+  const section = document.getElementById("participantsSection");
+  const title = document.getElementById("participantsTitle");
+  const note = document.getElementById("participantsNote");
+  const list = document.getElementById("participantsList");
+  const participants = WikiArtistProfiles.getParticipants(banda);
+
+  if (!participants) {
+    section.hidden = true;
+    return;
+  }
+
+  title.textContent = participants.title;
+  note.textContent = participants.note;
+  list.innerHTML = "";
+
+  participants.members.forEach((participante) => {
+    list.appendChild(criarParticipanteCard(participante));
+  });
+
+  section.hidden = false;
+}
+
 async function carregarFaixasAlbum(banda) {
   const trackList = document.getElementById("trackList");
   const trackCount = document.getElementById("trackCount");
@@ -115,6 +213,9 @@ if (!bandaSelecionada) {
         <button class="link-externo" id="detailPreviewButton" type="button">
           Tocar prévia
         </button>
+        <button class="link-externo" id="shareDetailButton" type="button">
+          Compartilhar
+        </button>
         <a class="link-externo" href="${bandaSelecionada.spotifyLink}" target="_blank" rel="noopener noreferrer">
           Spotify
         </a>
@@ -133,12 +234,23 @@ if (!bandaSelecionada) {
         <div class="tracks-list" id="trackList"></div>
       </section>
 
+      <section class="participants-section" id="participantsSection" hidden>
+        <div class="tracks-header">
+          <div>
+            <h2 id="participantsTitle">Participantes</h2>
+            <p id="participantsNote"></p>
+          </div>
+        </div>
+        <div class="participants-list" id="participantsList"></div>
+      </section>
+
       <a href="index.html" class="voltar">Voltar para a busca</a>
     </div>
   `;
 
   const previewBtn = document.getElementById("detailPreviewButton");
   const previewArea = document.getElementById("detailPreviewArea");
+  const shareBtn = document.getElementById("shareDetailButton");
 
   previewBtn.dataset.previewIdleText = "Tocar prévia";
   previewBtn.dataset.previewPlayingText = "Pausar prévia";
@@ -146,5 +258,10 @@ if (!bandaSelecionada) {
     tocarPrimeiraPreview(bandaSelecionada, previewBtn, previewArea);
   });
 
+  shareBtn.addEventListener("click", () => {
+    compartilharDetalhe(bandaSelecionada, shareBtn);
+  });
+
   carregarFaixasAlbum(bandaSelecionada);
+  renderParticipantes(bandaSelecionada);
 }

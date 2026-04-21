@@ -27,6 +27,12 @@
   </header>
 
   <section class="search-section">
+    <div class="search-modes" aria-label="Tipo de busca">
+      <button class="mode-btn active" type="button" data-search-type="album">Álbuns</button>
+      <button class="mode-btn" type="button" data-search-type="song">Músicas</button>
+      <button class="mode-btn" type="button" data-search-type="artist">Artistas</button>
+    </div>
+
     <div class="search-box">
       <input
         type="text"
@@ -41,6 +47,19 @@
       <select id="genreFilter">
         <option value="todos">Todos os gêneros</option>
       </select>
+
+      <select id="sortSelect">
+        <option value="relevance">Relevância</option>
+        <option value="recent">Mais recentes</option>
+        <option value="oldest">Mais antigos</option>
+        <option value="az">A-Z</option>
+        <option value="za">Z-A</option>
+      </select>
+
+      <label class="toggle-filter">
+        <input type="checkbox" id="showAlternativesToggle" />
+        <span>Mostrar versões alternativas</span>
+      </label>
     </div>
 
     <p class="status" id="status">Pesquise algo para começar.</p>
