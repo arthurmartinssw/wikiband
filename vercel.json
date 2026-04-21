@@ -1,8 +1,24 @@
 {
+  "cleanUrls": true,
   "redirects": [
     {
       "source": "/index.html",
       "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/favoritos.html",
+      "destination": "/favoritos",
+      "permanent": true
+    },
+    {
+      "source": "/banda.html",
+      "destination": "/banda",
+      "permanent": true
+    },
+    {
+      "source": "/sobre.html",
+      "destination": "/sobre",
       "permanent": true
     }
   ]

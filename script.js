@@ -99,7 +99,7 @@ function toggleBandFavorite(banda) {
 
 function abrirDetalhes(banda) {
   sessionStorage.setItem("bandaSelecionada", JSON.stringify(banda));
-  window.open("banda.html", "_blank");
+  window.open("/banda", "_blank");
 }
 
 function explorarAlbunsDoArtista(artista) {

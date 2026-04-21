@@ -196,7 +196,7 @@ if (!bandaSelecionada) {
     <div class="detalhe-content">
       <h1>Nenhuma banda selecionada</h1>
       <p>Volte para a busca e escolha um resultado para ver os detalhes.</p>
-      <a href="index.html" class="voltar">Voltar para a busca</a>
+      <a href="/" class="voltar">Voltar para a busca</a>
     </div>
   `;
 } else {
@@ -244,7 +244,7 @@ if (!bandaSelecionada) {
         <div class="participants-list" id="participantsList"></div>
       </section>
 
-      <a href="index.html" class="voltar">Voltar para a busca</a>
+      <a href="/" class="voltar">Voltar para a busca</a>
     </div>
   `;
 

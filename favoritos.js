@@ -21,7 +21,7 @@ function saveBandFavorites(favorites) {
 
 function abrirDetalhes(item) {
   sessionStorage.setItem("bandaSelecionada", JSON.stringify(item));
-  window.location.href = "banda.html";
+  window.location.href = "/banda";
 }
 
 async function tocarPreviewAlbum(album, button, status) {
