@@ -14,6 +14,9 @@ const PLACEHOLDER_IMAGEM = "https://via.placeholder.com/600x400?text=Sem+Imagem"
 
 let ultimoResultadoBruto = [];
 let debounceTimer = null;
+let currentPreviewAudio = null;
+let currentPreviewButton = null;
+const previewCache = new Map();
 
 function getHistory() {
   return JSON.parse(localStorage.getItem("wikiband_history")) || [];
@@ -88,6 +91,113 @@ function abrirDetalhes(banda) {
   window.open("banda.html", "_blank");
 }
 
+function normalizarPreviewUrl(url) {
+  return url ? url.replace(/^http:/, "https:") : "";
+}
+
+function pararPreviewAtual() {
+  if (currentPreviewAudio) {
+    currentPreviewAudio.pause();
+  }
+
+  if (currentPreviewButton) {
+    currentPreviewButton.textContent = "Tocar prévia";
+  }
+
+  currentPreviewAudio = null;
+  currentPreviewButton = null;
+}
+
+async function buscarPreviewAlbum(banda) {
+  if (previewCache.has(banda.albumId)) {
+    return previewCache.get(banda.albumId);
+  }
+
+  const url = `https://itunes.apple.com/lookup?id=${encodeURIComponent(
+    banda.albumId
+  )}&entity=song`;
+  const resposta = await fetch(url);
+  const dados = await resposta.json();
+  const faixa = (dados.results || []).find(
+    (item) => item.wrapperType === "track" && item.previewUrl
+  );
+
+  const preview = faixa
+    ? {
+        nome: faixa.trackName || banda.album,
+        url: normalizarPreviewUrl(faixa.previewUrl)
+      }
+    : null;
+
+  previewCache.set(banda.albumId, preview);
+  return preview;
+}
+
+async function tocarPreview(banda, card, previewBtn) {
+  const previewArea = card.querySelector(".preview-area");
+  const audioDoCard = previewArea.querySelector("audio");
+
+  if (audioDoCard && !audioDoCard.paused) {
+    audioDoCard.pause();
+    return;
+  }
+
+  pararPreviewAtual();
+
+  previewBtn.disabled = true;
+  previewBtn.textContent = "Carregando...";
+  previewArea.innerHTML = `<p class="preview-status">Buscando prévia...</p>`;
+
+  try {
+    const preview = await buscarPreviewAlbum(banda);
+
+    if (!preview) {
+      previewArea.innerHTML = `<p class="preview-status">Prévia indisponível para este álbum.</p>`;
+      previewBtn.textContent = "Tocar prévia";
+      return;
+    }
+
+    previewArea.innerHTML = `
+      <p class="preview-status"><strong>Prévia:</strong> ${preview.nome}</p>
+      <audio class="preview-player" controls src="${preview.url}"></audio>
+    `;
+
+    const audio = previewArea.querySelector("audio");
+    currentPreviewAudio = audio;
+    currentPreviewButton = previewBtn;
+
+    audio.addEventListener("play", () => {
+      previewBtn.textContent = "Pausar prévia";
+    });
+
+    audio.addEventListener("pause", () => {
+      previewBtn.textContent = "Tocar prévia";
+    });
+
+    audio.addEventListener("ended", () => {
+      previewBtn.textContent = "Tocar prévia";
+      currentPreviewAudio = null;
+      currentPreviewButton = null;
+    });
+
+    previewBtn.disabled = false;
+    const playPromise = audio.play();
+
+    if (playPromise) {
+      playPromise.catch((erroPlay) => {
+        console.warn("O navegador bloqueou o play automático:", erroPlay);
+        previewBtn.textContent = "Tocar prévia";
+      });
+    }
+  } catch (erro) {
+    console.error("Erro ao carregar prévia:", erro);
+    previewArea.innerHTML = `<p class="preview-status">Não foi possível carregar a prévia agora.</p>`;
+    previewBtn.textContent = "Tocar prévia";
+  } finally {
+    previewBtn.disabled = false;
+  }
+}
+
 function montarBanda(item) {
   const imagem = item.artworkUrl100
     ? item.artworkUrl100.replace("100x100bb", "600x600bb")
@@ -131,6 +241,8 @@ function criarCard(banda) {
       <p><strong>Lançamento:</strong> ${banda.lancamento}</p>
 
       <div class="card-actions">
+        <button class="primary-btn preview-btn">Tocar prévia</button>
+
         <button class="secondary-btn favorite-btn ${isFavorite(banda.albumId) ? "active" : ""}">
           ${isFavorite(banda.albumId) ? "Remover álbum" : "Favoritar álbum"}
         </button>
@@ -139,14 +251,17 @@ function criarCard(banda) {
           ${isBandFavorite(banda.bandaId) ? "Remover banda" : "Favoritar banda"}
         </button>
       </div>
+
+      <div class="preview-area" aria-live="polite"></div>
     </div>
   `;
 
+  const previewBtn = card.querySelector(".preview-btn");
   const favoriteBtn = card.querySelector(".favorite-btn");
   const favoriteBandBtn = card.querySelector(".favorite-band-btn");
 
   card.addEventListener("click", (event) => {
-    if (event.target.closest("button")) return;
+    if (event.target.closest("button, audio, .preview-area")) return;
     abrirDetalhes(banda);
   });
 
@@ -156,6 +271,10 @@ function criarCard(banda) {
 
   favoriteBandBtn.addEventListener("click", () => {
     toggleBandFavorite(banda);
+  });
+
+  previewBtn.addEventListener("click", () => {
+    tocarPreview(banda, card, previewBtn);
   });
 
   return card;
@@ -181,6 +300,7 @@ function preencherFiltroGenero(listaBandas) {
 }
 
 function renderizarResultados(lista) {
+  pararPreviewAtual();
   bandsGrid.innerHTML = "";
 
   if (!lista.length) {
