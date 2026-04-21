@@ -154,6 +154,12 @@ body {
   gap: 20px;
 }
 
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .painel {
   background: rgba(21, 21, 32, 0.94);
   border: 1px solid #2a2a3d;
@@ -244,6 +250,10 @@ body {
   font-size: 0.9rem;
 }
 
+.card-actions button {
+  cursor: pointer;
+}
+
 .primary-btn {
   background: linear-gradient(135deg, #6f7cff, #8f64ff);
   color: #fff;
@@ -256,7 +266,8 @@ body {
   border: none;
 }
 
-.favorite-btn.active {
+.favorite-btn.active,
+.favorite-band-btn.active {
   background: linear-gradient(135deg, #d94b7c, #ff6e8c);
 }
 

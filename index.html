@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="manifest" href="/site.webmanifest">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wikiband</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -64,10 +64,18 @@
 
       <section class="painel">
         <div class="painel-header">
-          <h2>Favoritos</h2>
+          <h2>&Aacute;lbuns favoritos</h2>
           <button class="mini-btn danger" id="clearFavoritesButton">Limpar</button>
         </div>
         <div id="favoritesList" class="lista-lateral"></div>
+      </section>
+
+      <section class="painel">
+        <div class="painel-header">
+          <h2>Bandas favoritas</h2>
+          <button class="mini-btn danger" id="clearBandFavoritesButton">Limpar</button>
+        </div>
+        <div id="bandFavoritesList" class="lista-lateral"></div>
       </section>
     </aside>
   </main>

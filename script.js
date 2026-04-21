@@ -5,8 +5,10 @@ const bandsGrid = document.getElementById("bandsGrid");
 const statusText = document.getElementById("status");
 const historyList = document.getElementById("historyList");
 const favoritesList = document.getElementById("favoritesList");
+const bandFavoritesList = document.getElementById("bandFavoritesList");
 const clearHistoryButton = document.getElementById("clearHistoryButton");
 const clearFavoritesButton = document.getElementById("clearFavoritesButton");
+const clearBandFavoritesButton = document.getElementById("clearBandFavoritesButton");
 
 const PLACEHOLDER_IMAGEM = "https://via.placeholder.com/600x400?text=Sem+Imagem";
 
@@ -50,35 +52,34 @@ function toggleFavorite(banda) {
     favorites.unshift(banda);
   }
 
-  function getBandaFavorites() {
-    return JSON.parse(localStorage.getItem("wikiband_band_favorites")) || [];
-  }
-
-  function saveBandFavorites(favorites) {
-    localStorage.setItem("wikiband_band_favorites", JSON.stringify(favorites));
-  }
-
-  function isBandFavorite(bandaId) {
-    return getBandaFavorites().some((item) => item.bandaId === bandaId);
-  }
-
-  function toggleFavorite(banda) {
-    let favorites = getBandaFavorites();
-
-    if (favorites.some((item) => item.bandaId === bandaId)) {
-      favorites = favorites.filter((item) => item.bandaId != banda.bandaId);
-
-    } else {
-      favorites.unshift(banda);
-    }
-    saveBandFavorites(favorites);
-  }
+  saveFavorites(favorites);
+  renderFavorites();
+  aplicarFiltroGenero();
 }
 
+function getBandFavorites() {
+  return JSON.parse(localStorage.getItem("wikiband_band_favorites")) || [];
+}
 
+function saveBandFavorites(favorites) {
+  localStorage.setItem("wikiband_band_favorites", JSON.stringify(favorites));
+}
 
-saveFavorites(favorites); {
-  renderFavorites();
+function isBandFavorite(bandaId) {
+  return getBandFavorites().some((item) => item.bandaId === bandaId);
+}
+
+function toggleBandFavorite(banda) {
+  let favorites = getBandFavorites();
+
+  if (favorites.some((item) => item.bandaId === banda.bandaId)) {
+    favorites = favorites.filter((item) => item.bandaId !== banda.bandaId);
+  } else {
+    favorites.unshift(banda);
+  }
+
+  saveBandFavorites(favorites);
+  renderBandFavorites();
   aplicarFiltroGenero();
 }
 
@@ -99,6 +100,8 @@ function montarBanda(item) {
   const lancamento = item.releaseDate
     ? new Date(item.releaseDate).getFullYear()
     : "Ano não informado";
+  const albumId = item.collectionId || `${nome}-${album}-${lancamento}`;
+  const bandaId = item.artistId || nome;
 
   return {
     nome,
@@ -107,8 +110,8 @@ function montarBanda(item) {
     album,
     lancamento,
     imagem,
-    albumId: item.collectionId,
-    bandaId: item.artistId,
+    albumId,
+    bandaId,
     spotifyLink: `https://open.spotify.com/search/${encodeURIComponent(nome)}`,
     youtubeLink: `https://www.youtube.com/results?search_query=${encodeURIComponent(nome)}`
   };
@@ -129,25 +132,23 @@ function criarCard(banda) {
 
       <div class="card-actions">
         <button class="secondary-btn favorite-btn ${isFavorite(banda.albumId) ? "active" : ""}">
-          ${isFavorite(banda.albumId) ? "Remover album" : "Favoritar album"}
+          ${isFavorite(banda.albumId) ? "Remover álbum" : "Favoritar álbum"}
         </button>
 
-        <button class="secondary-btn favorite-band-btn ${isBandFavorite(banda.bandaId) ? "active" : ""}" >
+        <button class="secondary-btn favorite-band-btn ${isBandFavorite(banda.bandaId) ? "active" : ""}">
           ${isBandFavorite(banda.bandaId) ? "Remover banda" : "Favoritar banda"}
         </button>
-
       </div>
     </div>
   `;
 
   const favoriteBtn = card.querySelector(".favorite-btn");
-  const favoriteBtn = card.querySelector(".favorite-band-btn");
+  const favoriteBandBtn = card.querySelector(".favorite-band-btn");
 
   card.addEventListener("click", (event) => {
     if (event.target.closest("button")) return;
     abrirDetalhes(banda);
   });
-
 
   favoriteBtn.addEventListener("click", () => {
     toggleFavorite(banda);
@@ -155,7 +156,6 @@ function criarCard(banda) {
 
   favoriteBandBtn.addEventListener("click", () => {
     toggleBandFavorite(banda);
-    aplicarFiltroGenero();
   });
 
   return card;
@@ -264,6 +264,7 @@ function pesquisarComDebounce() {
     }
   }, 700);
 }
+
 function renderHistory() {
   const history = getHistory();
 
@@ -295,7 +296,7 @@ function renderFavorites() {
   const favorites = getFavorites();
 
   if (!favorites.length) {
-    favoritesList.innerHTML = `<p class="vazio">Nenhum favorito salvo.</p>`;
+    favoritesList.innerHTML = `<p class="vazio">Nenhum álbum favorito.</p>`;
     return;
   }
 
@@ -305,7 +306,8 @@ function renderFavorites() {
     const item = document.createElement("div");
     item.className = "item-lateral";
     item.innerHTML = `
-      <strong>${banda.nome}</strong>
+      <strong>${banda.album || banda.nome}</strong>
+      <p>${banda.nome}</p>
       <p>${banda.genero}</p>
       <button class="ver-favorito">Ver detalhes</button>
       <button class="remover-favorito danger mini-btn">Remover</button>
@@ -320,6 +322,38 @@ function renderFavorites() {
     });
 
     favoritesList.appendChild(item);
+  });
+}
+
+function renderBandFavorites() {
+  const favorites = getBandFavorites();
+
+  if (!favorites.length) {
+    bandFavoritesList.innerHTML = `<p class="vazio">Nenhuma banda favorita.</p>`;
+    return;
+  }
+
+  bandFavoritesList.innerHTML = "";
+
+  favorites.forEach((banda) => {
+    const item = document.createElement("div");
+    item.className = "item-lateral";
+    item.innerHTML = `
+      <strong>${banda.nome}</strong>
+      <p>${banda.genero}</p>
+      <button class="ver-favorito">Ver detalhes</button>
+      <button class="remover-banda-favorita danger mini-btn">Remover</button>
+    `;
+
+    item.querySelector(".ver-favorito").addEventListener("click", () => {
+      abrirDetalhes(banda);
+    });
+
+    item.querySelector(".remover-banda-favorita").addEventListener("click", () => {
+      toggleBandFavorite(banda);
+    });
+
+    bandFavoritesList.appendChild(item);
   });
 }
 
@@ -347,5 +381,12 @@ clearFavoritesButton.addEventListener("click", () => {
   aplicarFiltroGenero();
 });
 
+clearBandFavoritesButton.addEventListener("click", () => {
+  localStorage.removeItem("wikiband_band_favorites");
+  renderBandFavorites();
+  aplicarFiltroGenero();
+});
+
 renderHistory();
 renderFavorites();
+renderBandFavorites();
