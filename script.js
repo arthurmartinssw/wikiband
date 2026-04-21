@@ -37,20 +37,47 @@ function saveFavorites(favorites) {
   localStorage.setItem("wikiband_favorites", JSON.stringify(favorites));
 }
 
-function isFavorite(nome) {
-  return getFavorites().some((item) => item.nome === nome);
+function isFavorite(albumId) {
+  return getFavorites().some((item) => item.albumId === albumId);
 }
 
 function toggleFavorite(banda) {
   let favorites = getFavorites();
 
-  if (favorites.some((item) => item.nome === banda.nome)) {
-    favorites = favorites.filter((item) => item.nome !== banda.nome);
+  if (favorites.some((item) => item.albumId === banda.albumId)) {
+    favorites = favorites.filter((item) => item.albumId !== banda.albumId);
   } else {
     favorites.unshift(banda);
   }
 
-  saveFavorites(favorites);
+  function getBandaFavorites() {
+    return JSON.parse(localStorage.getItem("wikiband_band_favorites")) || [];
+  }
+
+  function saveBandFavorites(favorites) {
+    localStorage.setItem("wikiband_band_favorites", JSON.stringify(favorites));
+  }
+
+  function isBandFavorite(bandaId) {
+    return getBandaFavorites().some((item) => item.bandaId === bandaId);
+  }
+
+  function toggleFavorite(banda) {
+    let favorites = getBandaFavorites();
+
+    if (favorites.some((item) => item.bandaId === bandaId)) {
+      favorites = favorites.filter((item) => item.bandaId != banda.bandaId);
+
+    } else {
+      favorites.unshift(banda);
+    }
+    saveBandFavorites(favorites);
+  }
+}
+
+
+
+saveFavorites(favorites); {
   renderFavorites();
   aplicarFiltroGenero();
 }
@@ -80,6 +107,8 @@ function montarBanda(item) {
     album,
     lancamento,
     imagem,
+    albumId: item.collectionId,
+    bandaId: item.artistId,
     spotifyLink: `https://open.spotify.com/search/${encodeURIComponent(nome)}`,
     youtubeLink: `https://www.youtube.com/results?search_query=${encodeURIComponent(nome)}`
   };
@@ -99,14 +128,20 @@ function criarCard(banda) {
       <p><strong>Lançamento:</strong> ${banda.lancamento}</p>
 
       <div class="card-actions">
-        <button class="secondary-btn favorite-btn ${isFavorite(banda.nome) ? "active" : ""}">
-          ${isFavorite(banda.nome) ? "Remover favorito" : "Favoritar"}
+        <button class="secondary-btn favorite-btn ${isFavorite(banda.albumId) ? "active" : ""}">
+          ${isFavorite(banda.albumId) ? "Remover album" : "Favoritar album"}
         </button>
+
+        <button class="secondary-btn favorite-band-btn ${isBandFavorite(banda.bandaId) ? "active" : ""}" >
+          ${isBandFavorite(banda.bandaId) ? "Remover banda" : "Favoritar banda"}
+        </button>
+
       </div>
     </div>
   `;
 
   const favoriteBtn = card.querySelector(".favorite-btn");
+  const favoriteBtn = card.querySelector(".favorite-band-btn");
 
   card.addEventListener("click", (event) => {
     if (event.target.closest("button")) return;
@@ -116,6 +151,11 @@ function criarCard(banda) {
 
   favoriteBtn.addEventListener("click", () => {
     toggleFavorite(banda);
+  });
+
+  favoriteBandBtn.addEventListener("click", () => {
+    toggleBandFavorite(banda);
+    aplicarFiltroGenero();
   });
 
   return card;
