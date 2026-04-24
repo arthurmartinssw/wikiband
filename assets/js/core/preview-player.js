@@ -18,6 +18,7 @@ const WikiPreview = (() => {
   let radioQueue = [];
   let radioIndex = -1;
   let radioLabel = "";
+  let queueBuildToken = 0;
 
   function normalizarPreviewUrl(url) {
     return url ? url.replace(/^http:/, "https:") : "";
@@ -76,10 +77,57 @@ const WikiPreview = (() => {
   }
 
   function clearRadioState() {
+    queueBuildToken += 1;
     radioQueue = [];
     radioIndex = -1;
     radioLabel = "";
     updateRadioStatus();
+  }
+
+  function setQueueFromTracks(tracks, label, currentTrackId, source) {
+    const playableTracks = (tracks || []).filter((track) => track?.previewUrl);
+
+    if (playableTracks.length <= 1) {
+      clearRadioState();
+      return;
+    }
+
+    radioQueue = playableTracks.map((track) => ({
+      track,
+      source: source || null
+    }));
+    radioLabel = label || "Fila";
+
+    const foundIndex = playableTracks.findIndex((track) => track.id === currentTrackId);
+    radioIndex = foundIndex >= 0 ? foundIndex : 0;
+    updateRadioStatus();
+  }
+
+  function primeAlbumQueue(album, currentTrackId) {
+    if (!album?.albumId) {
+      clearRadioState();
+      return;
+    }
+
+    const token = ++queueBuildToken;
+
+    getAlbumTracks(album)
+      .then((tracks) => {
+        if (token !== queueBuildToken) {
+          return;
+        }
+
+        const label = album.album ? `Album: ${album.album}` : `Artista: ${album.nome || "Wikiband"}`;
+        setQueueFromTracks(tracks, label, currentTrackId, album);
+      })
+      .catch((erro) => {
+        if (token !== queueBuildToken) {
+          return;
+        }
+
+        console.warn("Nao foi possivel montar fila do album:", erro);
+        clearRadioState();
+      });
   }
 
   function ensurePlayer() {
@@ -242,6 +290,13 @@ const WikiPreview = (() => {
   }
 
   async function resolveRadioEntry(entry) {
+    if (entry?.track?.previewUrl) {
+      return {
+        track: entry.track,
+        source: entry.source || entry.item || null
+      };
+    }
+
     if (!entry?.item) return null;
 
     const trackDireta = montarFaixaDeMusica(entry.item);
@@ -284,6 +339,10 @@ const WikiPreview = (() => {
       return playRadioAt(normalizedIndex + direction, direction, attempts + 1);
     }
 
+    if (currentTrack?.id === resolved.track.id && attempts < radioQueue.length - 1) {
+      return playRadioAt(normalizedIndex + direction, direction, attempts + 1);
+    }
+
     radioIndex = normalizedIndex;
     updateRadioStatus();
 
@@ -293,6 +352,7 @@ const WikiPreview = (() => {
 
   async function startRadio(items, options = {}) {
     ensurePlayer();
+    queueBuildToken += 1;
 
     radioQueue = (Array.isArray(items) ? items : []).filter(Boolean).map((item) => ({ item }));
     radioIndex = -1;
@@ -340,8 +400,12 @@ const WikiPreview = (() => {
       return Promise.reject(new Error("Previa indisponivel."));
     }
 
-    if (!options.fromRadio && radioQueue.length) {
-      clearRadioState();
+    if (!options.fromRadio) {
+      if (radioQueue.length) {
+        clearRadioState();
+      } else {
+        queueBuildToken += 1;
+      }
     }
 
     const isSameTrack = currentTrack?.id === track.id;
@@ -379,6 +443,10 @@ const WikiPreview = (() => {
 
     if (window.WikibandStorage?.addPlayEvent) {
       window.WikibandStorage.addPlayEvent(album || track);
+    }
+
+    if (!options.fromRadio) {
+      primeAlbumQueue(album, track.id);
     }
 
     const playPromise = audio.play();
