@@ -2,18 +2,67 @@
   const HISTORY_KEY = "wikiband_history";
   const ALBUM_FAVORITES_KEY = "wikiband_favorites";
   const BAND_FAVORITES_KEY = "wikiband_band_favorites";
+  const PLAY_HISTORY_KEY = "wikiband_play_history";
+  const COLLECTIONS_KEY = "wikiband_collections";
 
   function readList(key) {
     try {
       return JSON.parse(localStorage.getItem(key)) || [];
     } catch (erro) {
-      console.warn(`Não foi possível ler ${key}:`, erro);
+      console.warn(`Nao foi possivel ler ${key}:`, erro);
       return [];
     }
   }
 
   function saveList(key, items) {
     localStorage.setItem(key, JSON.stringify(items));
+  }
+
+  function parseYear(valor) {
+    const numero = Number(valor);
+    if (Number.isFinite(numero) && numero > 0) {
+      return numero;
+    }
+
+    const texto = String(valor || "");
+    const match = texto.match(/(19|20)\d{2}/);
+    return match ? Number(match[0]) : null;
+  }
+
+  function getDecadeLabel(valor) {
+    const ano = parseYear(valor);
+    if (!ano) return "Nao informado";
+
+    const decada = Math.floor(ano / 10) * 10;
+    return `${decada}s`;
+  }
+
+  function buildItemKey(item) {
+    if (!item) return "unknown:0";
+
+    const tipo = item.tipo || (item.trackId ? "song" : item.albumId ? "album" : "artist");
+
+    if (tipo === "song") {
+      return `song:${item.trackId || `${item.nome || "artista"}-${item.musica || item.album || "musica"}`}`;
+    }
+
+    if (tipo === "artist") {
+      return `artist:${item.bandaId || item.artistId || item.nome || "desconhecido"}`;
+    }
+
+    return `album:${item.albumId || `${item.nome || "artista"}-${item.album || "album"}-${item.lancamento || "ano"}`}`;
+  }
+
+  function topEntries(counter, limit = 5) {
+    return [...counter.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([label, total]) => ({ label, total }));
+  }
+
+  function increaseCounter(counter, key, amount = 1) {
+    const label = String(key || "Nao informado").trim() || "Nao informado";
+    counter.set(label, (counter.get(label) || 0) + amount);
   }
 
   function getHistory() {
@@ -28,7 +77,7 @@
     });
 
     history.unshift({ term, type });
-    history = history.slice(0, 8);
+    history = history.slice(0, 12);
     saveList(HISTORY_KEY, history);
     return history;
   }
@@ -87,16 +136,200 @@
     localStorage.removeItem(BAND_FAVORITES_KEY);
   }
 
+  function getPlayHistory() {
+    return readList(PLAY_HISTORY_KEY);
+  }
+
+  function addPlayEvent(item) {
+    if (!item) return getPlayHistory();
+
+    const event = {
+      ts: Date.now(),
+      key: buildItemKey(item),
+      tipo: item.tipo || (item.trackId ? "song" : item.albumId ? "album" : "artist"),
+      nome: item.nome || item.artista || "Artista desconhecido",
+      musica: item.musica || item.nome || "",
+      album: item.album || "",
+      genero: item.genero || "Nao informado",
+      pais: item.pais || "Nao informado",
+      lancamento: item.lancamento || ""
+    };
+
+    const plays = getPlayHistory();
+    plays.unshift(event);
+    saveList(PLAY_HISTORY_KEY, plays.slice(0, 240));
+    return plays;
+  }
+
+  function clearPlayHistory() {
+    localStorage.removeItem(PLAY_HISTORY_KEY);
+  }
+
+  function getCollections() {
+    return readList(COLLECTIONS_KEY).map((collection) => ({
+      ...collection,
+      items: Array.isArray(collection.items) ? collection.items : []
+    }));
+  }
+
+  function saveCollections(collections) {
+    saveList(COLLECTIONS_KEY, collections);
+    return collections;
+  }
+
+  function createCollection(name) {
+    const trimmedName = String(name || "").trim();
+    if (!trimmedName) return null;
+
+    const collections = getCollections();
+    const existing = collections.find(
+      (collection) => collection.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    if (existing) {
+      return existing;
+    }
+
+    const collection = {
+      id: `collection_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      name: trimmedName,
+      createdAt: Date.now(),
+      items: []
+    };
+
+    collections.unshift(collection);
+    saveCollections(collections);
+    return collection;
+  }
+
+  function renameCollection(collectionId, nextName) {
+    const trimmedName = String(nextName || "").trim();
+    if (!trimmedName) return getCollections();
+
+    const collections = getCollections().map((collection) => {
+      if (collection.id !== collectionId) return collection;
+      return {
+        ...collection,
+        name: trimmedName
+      };
+    });
+
+    return saveCollections(collections);
+  }
+
+  function deleteCollection(collectionId) {
+    const collections = getCollections().filter((collection) => collection.id !== collectionId);
+    return saveCollections(collections);
+  }
+
+  function addItemToCollection(collectionId, item) {
+    const itemKey = buildItemKey(item);
+
+    const collections = getCollections().map((collection) => {
+      if (collection.id !== collectionId) return collection;
+
+      if (collection.items.some((saved) => saved.key === itemKey)) {
+        return collection;
+      }
+
+      return {
+        ...collection,
+        items: [{ key: itemKey, addedAt: Date.now(), item }, ...collection.items]
+      };
+    });
+
+    return saveCollections(collections);
+  }
+
+  function removeItemFromCollection(collectionId, itemKey) {
+    const collections = getCollections().map((collection) => {
+      if (collection.id !== collectionId) return collection;
+
+      return {
+        ...collection,
+        items: collection.items.filter((saved) => saved.key !== itemKey)
+      };
+    });
+
+    return saveCollections(collections);
+  }
+
+  function ensureCollectionByName(name) {
+    const trimmedName = String(name || "").trim();
+    if (!trimmedName) return null;
+
+    const existing = getCollections().find(
+      (collection) => collection.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    return existing || createCollection(trimmedName);
+  }
+
+  function getDashboardData() {
+    const history = getHistory();
+    const albumFavorites = getAlbumFavorites();
+    const bandFavorites = getBandFavorites();
+    const playHistory = getPlayHistory();
+    const collections = getCollections();
+
+    const genreCounter = new Map();
+    const artistCounter = new Map();
+    const decadeCounter = new Map();
+
+    albumFavorites.forEach((item) => {
+      increaseCounter(genreCounter, item.genero, 2);
+      increaseCounter(artistCounter, item.nome, 2);
+      increaseCounter(decadeCounter, getDecadeLabel(item.lancamento), 2);
+    });
+
+    bandFavorites.forEach((item) => {
+      increaseCounter(genreCounter, item.genero, 2);
+      increaseCounter(artistCounter, item.nome, 2);
+      increaseCounter(decadeCounter, getDecadeLabel(item.lancamento), 1);
+    });
+
+    playHistory.forEach((event) => {
+      increaseCounter(genreCounter, event.genero, 1);
+      increaseCounter(artistCounter, event.nome, 1);
+      increaseCounter(decadeCounter, getDecadeLabel(event.lancamento), 1);
+    });
+
+    return {
+      totals: {
+        searches: history.length,
+        albumFavorites: albumFavorites.length,
+        bandFavorites: bandFavorites.length,
+        plays: playHistory.length,
+        collections: collections.length
+      },
+      topGenres: topEntries(genreCounter),
+      topArtists: topEntries(artistCounter),
+      topDecades: topEntries(decadeCounter)
+    };
+  }
+
   window.WikibandStorage = {
     addHistoryTerm,
+    addItemToCollection,
+    addPlayEvent,
+    buildItemKey,
     clearAlbumFavorites,
     clearBandFavorites,
     clearHistory,
+    clearPlayHistory,
+    createCollection,
+    deleteCollection,
+    ensureCollectionByName,
     getAlbumFavorites,
     getBandFavorites,
+    getCollections,
+    getDashboardData,
     getHistory,
+    getPlayHistory,
     isAlbumFavorite,
     isBandFavorite,
+    removeItemFromCollection,
+    renameCollection,
     toggleAlbumFavorite,
     toggleBandFavorite
   };

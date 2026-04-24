@@ -29,8 +29,44 @@
   <main class="favoritos-container">
     <section class="painel">
       <div class="painel-header">
+        <h2>Dashboard musical</h2>
+        <button class="mini-btn danger" id="clearPlayHistoryButton">Limpar reproduções</button>
+      </div>
+
+      <div class="dashboard-grid" id="dashboardGrid"></div>
+
+      <div class="dashboard-lists">
+        <div class="dashboard-list">
+          <h3>Top gêneros</h3>
+          <div id="topGenresList" class="insight-list"></div>
+        </div>
+        <div class="dashboard-list">
+          <h3>Top artistas</h3>
+          <div id="topArtistsList" class="insight-list"></div>
+        </div>
+        <div class="dashboard-list">
+          <h3>Décadas favoritas</h3>
+          <div id="topDecadesList" class="insight-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="painel">
+      <div class="painel-header">
+        <h2>Coleções personalizadas</h2>
+        <button class="mini-btn" id="createCollectionButton">Nova coleção</button>
+      </div>
+      <div class="collections-list" id="collectionsList"></div>
+    </section>
+
+    <section class="painel">
+      <div class="painel-header">
         <h2>Álbuns favoritos</h2>
-        <button class="mini-btn danger" id="clearAlbumFavoritesButton">Limpar</button>
+        <div class="painel-header-actions">
+          <button class="mini-btn" id="startFavoritesRadioButton">Rádio dos favoritos</button>
+          <button class="mini-btn" id="stopRadioFavoritesButton">Parar rádio</button>
+          <button class="mini-btn danger" id="clearAlbumFavoritesButton">Limpar</button>
+        </div>
       </div>
       <div class="favoritos-grid" id="albumFavoritesGrid"></div>
     </section>
@@ -45,6 +81,9 @@
   </main>
 
   <script src="/assets/js/core/preview-player.js"></script>
+  <script src="/assets/js/modules/storage.js"></script>
+  <script src="/assets/js/modules/links.js"></script>
   <script src="/assets/js/pages/favoritos.js"></script>
+  <script src="/assets/js/core/pwa.js"></script>
 </body>
 </html>

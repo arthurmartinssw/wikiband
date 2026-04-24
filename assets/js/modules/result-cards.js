@@ -20,6 +20,7 @@
           <button class="secondary-btn favorite-band-btn ${context.isBandFavorite(album.bandaId) ? "active" : ""}" type="button">
             ${context.isBandFavorite(album.bandaId) ? "Remover banda" : "Favoritar banda"}
           </button>
+          <button class="secondary-btn collection-btn" type="button">Coleção</button>
           <button class="secondary-btn share-btn" type="button">Compartilhar</button>
         </div>
 
@@ -30,6 +31,7 @@
     const previewBtn = card.querySelector(".preview-btn");
     const favoriteBtn = card.querySelector(".favorite-btn");
     const favoriteBandBtn = card.querySelector(".favorite-band-btn");
+    const collectionBtn = card.querySelector(".collection-btn");
     const shareBtn = card.querySelector(".share-btn");
 
     previewBtn.dataset.previewIdleText = "Tocar prévia";
@@ -43,6 +45,7 @@
     previewBtn.addEventListener("click", () => context.playAlbumPreview(album, card, previewBtn));
     favoriteBtn.addEventListener("click", () => context.toggleAlbumFavorite(album));
     favoriteBandBtn.addEventListener("click", () => context.toggleBandFavorite(album));
+    collectionBtn.addEventListener("click", () => context.addToCollection(album));
     shareBtn.addEventListener("click", () => context.shareItem(album, shareBtn));
 
     return card;
@@ -66,6 +69,7 @@
             ${musica.previewUrl ? "Tocar prévia" : "Sem prévia"}
           </button>
           <button class="secondary-btn details-btn" type="button">Ver álbum</button>
+          <button class="secondary-btn collection-btn" type="button">Coleção</button>
           <button class="secondary-btn share-btn" type="button">Compartilhar</button>
         </div>
       </div>
@@ -73,6 +77,7 @@
 
     const previewBtn = card.querySelector(".preview-btn");
     const detailsBtn = card.querySelector(".details-btn");
+    const collectionBtn = card.querySelector(".collection-btn");
     const shareBtn = card.querySelector(".share-btn");
 
     previewBtn.dataset.previewIdleText = "Tocar prévia";
@@ -85,6 +90,7 @@
 
     previewBtn.addEventListener("click", () => context.playSongPreview(musica, previewBtn));
     detailsBtn.addEventListener("click", () => context.openDetails(musica));
+    collectionBtn.addEventListener("click", () => context.addToCollection(musica));
     shareBtn.addEventListener("click", () => context.shareItem(musica, shareBtn));
 
     return card;
@@ -106,6 +112,7 @@
           <button class="secondary-btn favorite-band-btn ${context.isBandFavorite(artista.bandaId) ? "active" : ""}" type="button">
             ${context.isBandFavorite(artista.bandaId) ? "Remover banda" : "Favoritar banda"}
           </button>
+          <button class="secondary-btn collection-btn" type="button">Coleção</button>
           <button class="secondary-btn share-btn" type="button">Compartilhar</button>
         </div>
       </div>
@@ -113,6 +120,7 @@
 
     const exploreBtn = card.querySelector(".explore-btn");
     const favoriteBandBtn = card.querySelector(".favorite-band-btn");
+    const collectionBtn = card.querySelector(".collection-btn");
     const shareBtn = card.querySelector(".share-btn");
 
     card.addEventListener("click", (event) => {
@@ -122,6 +130,7 @@
 
     exploreBtn.addEventListener("click", () => context.exploreArtistAlbums(artista));
     favoriteBandBtn.addEventListener("click", () => context.toggleBandFavorite(artista));
+    collectionBtn.addEventListener("click", () => context.addToCollection(artista));
     shareBtn.addEventListener("click", () => context.shareItem(artista, shareBtn));
 
     return card;

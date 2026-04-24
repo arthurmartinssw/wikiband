@@ -97,7 +97,10 @@ body.has-mini-player {
 .secondary-btn,
 .track-preview-btn,
 .item-lateral button,
+.chip-btn,
+.mini-player-prev,
 .mini-player-toggle,
+.mini-player-next,
 .mini-player-close {
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -118,7 +121,10 @@ body.has-mini-player {
 .link-externo:hover,
 .secondary-btn:hover,
 .track-preview-btn:hover,
-.item-lateral button:hover {
+.item-lateral button:hover,
+.chip-btn:hover,
+.mini-player-prev:hover,
+.mini-player-next:hover {
   border-color: var(--border-strong);
   background: #272b26;
   color: var(--text);
@@ -225,6 +231,30 @@ body.has-mini-player {
   gap: 20px;
 }
 
+.discovery-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.discovery-block h3 {
+  font-size: 0.92rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-btn {
+  padding: 7px 10px;
+  font-size: 0.84rem;
+  border-radius: 999px;
+}
+
 .painel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -238,6 +268,12 @@ body.has-mini-player {
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
+}
+
+.painel-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .painel-header h2 {
@@ -588,6 +624,120 @@ body.has-mini-player {
   gap: 20px;
 }
 
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.stat-card {
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.stat-card p {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 5px;
+}
+
+.stat-card strong {
+  font-size: 1.4rem;
+}
+
+.dashboard-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.dashboard-list h3 {
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+.insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.insight-row {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.insight-row strong {
+  font-size: 0.9rem;
+}
+
+.insight-row span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.collections-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.collection-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  padding: 12px;
+}
+
+.collection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.collection-header h3 {
+  font-size: 1rem;
+}
+
+.collection-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.collection-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.collection-item p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.collection-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .sobre-box h2 {
   margin-bottom: 18px;
 }
@@ -660,6 +810,12 @@ body.has-mini-player {
   font-size: 0.9rem;
 }
 
+.mini-player-queue {
+  color: var(--subtle);
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
 .mini-player-audio {
   width: 100%;
   height: 36px;
@@ -675,6 +831,11 @@ body.has-mini-player {
   padding: 9px 12px;
   border-color: var(--accent);
   background: var(--accent-bg);
+}
+
+.mini-player-prev,
+.mini-player-next {
+  padding: 9px 12px;
 }
 
 .mini-player-close {
@@ -697,6 +858,10 @@ body.has-mini-player {
     grid-column: 1 / -1;
   }
 
+  .mini-player-actions {
+    grid-column: 1 / -1;
+  }
+
   .topo-conteudo {
     flex-direction: column;
     align-items: flex-start;
@@ -714,8 +879,11 @@ body.has-mini-player {
 
   .mini-player-actions {
     grid-column: 1 / -1;
+    flex-wrap: wrap;
   }
 
+  .mini-player-prev,
+  .mini-player-next,
   .mini-player-toggle {
     flex: 1;
   }
@@ -726,5 +894,10 @@ body.has-mini-player {
 
   .track-preview-btn {
     grid-column: 1 / -1;
+  }
+
+  .collection-item {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

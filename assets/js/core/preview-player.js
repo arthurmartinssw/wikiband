@@ -9,8 +9,15 @@ const WikiPreview = (() => {
   let meta = null;
   let toggleButton = null;
   let closeButton = null;
+  let prevButton = null;
+  let nextButton = null;
+  let queueStatus = null;
   let activeButton = null;
   let currentTrack = null;
+
+  let radioQueue = [];
+  let radioIndex = -1;
+  let radioLabel = "";
 
   function normalizarPreviewUrl(url) {
     return url ? url.replace(/^http:/, "https:") : "";
@@ -51,6 +58,30 @@ const WikiPreview = (() => {
     activeButton = null;
   }
 
+  function updateRadioStatus() {
+    if (!player) return;
+
+    const hasRadio = radioQueue.length > 0;
+
+    queueStatus.hidden = !hasRadio;
+
+    if (hasRadio) {
+      const position = radioIndex >= 0 ? radioIndex + 1 : 0;
+      queueStatus.textContent = `${radioLabel || "Radio"} • ${position}/${radioQueue.length}`;
+    }
+
+    const hasNavigation = hasRadio && radioQueue.length > 1;
+    prevButton.disabled = !hasNavigation;
+    nextButton.disabled = !hasNavigation;
+  }
+
+  function clearRadioState() {
+    radioQueue = [];
+    radioIndex = -1;
+    radioLabel = "";
+    updateRadioStatus();
+  }
+
   function ensurePlayer() {
     if (player) return;
 
@@ -63,10 +94,13 @@ const WikiPreview = (() => {
         <div class="mini-player-info">
           <strong class="mini-player-title">Nenhuma prévia tocando</strong>
           <span class="mini-player-meta">Escolha uma faixa para ouvir</span>
+          <span class="mini-player-queue" hidden></span>
         </div>
         <audio class="mini-player-audio" controls></audio>
         <div class="mini-player-actions">
+          <button class="mini-player-prev" type="button">Anterior</button>
           <button class="mini-player-toggle" type="button">Pausar</button>
+          <button class="mini-player-next" type="button">Proxima</button>
           <button class="mini-player-close" type="button" aria-label="Fechar player">×</button>
         </div>
       </div>
@@ -78,8 +112,11 @@ const WikiPreview = (() => {
     cover = player.querySelector(".mini-player-cover");
     title = player.querySelector(".mini-player-title");
     meta = player.querySelector(".mini-player-meta");
+    queueStatus = player.querySelector(".mini-player-queue");
     toggleButton = player.querySelector(".mini-player-toggle");
     closeButton = player.querySelector(".mini-player-close");
+    prevButton = player.querySelector(".mini-player-prev");
+    nextButton = player.querySelector(".mini-player-next");
 
     audio.addEventListener("play", () => {
       player.classList.add("active");
@@ -94,6 +131,15 @@ const WikiPreview = (() => {
     });
 
     audio.addEventListener("ended", () => {
+      if (radioQueue.length > 0) {
+        nextInRadio().catch(() => {
+          toggleButton.textContent = "Tocar";
+          clearActiveButton();
+          clearRadioState();
+        });
+        return;
+      }
+
       toggleButton.textContent = "Tocar";
       clearActiveButton();
     });
@@ -103,14 +149,27 @@ const WikiPreview = (() => {
 
       if (audio.paused) {
         audio.play().catch((erro) => {
-          console.warn("Não foi possível iniciar a prévia:", erro);
+          console.warn("Nao foi possivel iniciar a previa:", erro);
         });
       } else {
         audio.pause();
       }
     });
 
+    prevButton.addEventListener("click", () => {
+      prevInRadio().catch((erro) => {
+        console.warn("Nao foi possivel tocar a faixa anterior:", erro);
+      });
+    });
+
+    nextButton.addEventListener("click", () => {
+      nextInRadio().catch((erro) => {
+        console.warn("Nao foi possivel tocar a proxima faixa:", erro);
+      });
+    });
+
     closeButton.addEventListener("click", stop);
+    updateRadioStatus();
   }
 
   function montarFaixa(item, album, index) {
@@ -123,6 +182,25 @@ const WikiPreview = (() => {
       duracaoMs: item.trackTimeMillis || 0,
       previewUrl: normalizarPreviewUrl(item.previewUrl),
       imagem: melhorarImagem(item.artworkUrl100 || album.imagem)
+    };
+  }
+
+  function montarFaixaDeMusica(item) {
+    const previewUrl = normalizarPreviewUrl(item?.previewUrl);
+
+    if (!previewUrl) {
+      return null;
+    }
+
+    return {
+      id: item.trackId || `${item.nome || "artista"}-${item.musica || item.album || "musica"}`,
+      nome: item.musica || item.trackName || item.nome || "Faixa",
+      artista: item.nome || item.artistName || "Artista",
+      album: item.album || item.collectionName || "Album",
+      numero: item.numero || 1,
+      duracaoMs: item.duracaoMs || item.trackTimeMillis || 0,
+      previewUrl,
+      imagem: item.imagem || melhorarImagem(item.artworkUrl100)
     };
   }
 
@@ -139,7 +217,7 @@ const WikiPreview = (() => {
     const resposta = await fetch(url);
 
     if (!resposta.ok) {
-      throw new Error("Não foi possível buscar as faixas do álbum.");
+      throw new Error("Nao foi possivel buscar as faixas do album.");
     }
 
     const dados = await resposta.json();
@@ -156,11 +234,114 @@ const WikiPreview = (() => {
     return faixas.find((faixa) => faixa.previewUrl) || null;
   }
 
-  function playTrack(track, album, button) {
+  function normalizeRadioIndex(index) {
+    if (!radioQueue.length) return -1;
+
+    const total = radioQueue.length;
+    return ((index % total) + total) % total;
+  }
+
+  async function resolveRadioEntry(entry) {
+    if (!entry?.item) return null;
+
+    const trackDireta = montarFaixaDeMusica(entry.item);
+
+    if (trackDireta) {
+      return {
+        track: trackDireta,
+        source: entry.item
+      };
+    }
+
+    const previewAlbum = await getFirstPreview(entry.item);
+
+    if (!previewAlbum) {
+      return null;
+    }
+
+    return {
+      track: previewAlbum,
+      source: entry.item
+    };
+  }
+
+  async function playRadioAt(index, direction = 1, attempts = 0) {
+    ensurePlayer();
+
+    if (!radioQueue.length) {
+      throw new Error("Radio inativo.");
+    }
+
+    if (attempts >= radioQueue.length) {
+      throw new Error("Nenhuma previa disponivel na fila.");
+    }
+
+    const normalizedIndex = normalizeRadioIndex(index);
+    const entry = radioQueue[normalizedIndex];
+    const resolved = await resolveRadioEntry(entry);
+
+    if (!resolved?.track?.previewUrl) {
+      return playRadioAt(normalizedIndex + direction, direction, attempts + 1);
+    }
+
+    radioIndex = normalizedIndex;
+    updateRadioStatus();
+
+    await playTrack(resolved.track, resolved.source, null, { fromRadio: true });
+    return resolved;
+  }
+
+  async function startRadio(items, options = {}) {
+    ensurePlayer();
+
+    radioQueue = (Array.isArray(items) ? items : []).filter(Boolean).map((item) => ({ item }));
+    radioIndex = -1;
+    radioLabel = String(options.label || "Radio");
+    updateRadioStatus();
+
+    if (!radioQueue.length) {
+      throw new Error("Nao ha itens para tocar.");
+    }
+
+    return playRadioAt(0, 1);
+  }
+
+  async function nextInRadio() {
+    if (!radioQueue.length) {
+      throw new Error("Radio inativo.");
+    }
+
+    const nextIndex = radioIndex >= 0 ? radioIndex + 1 : 0;
+    return playRadioAt(nextIndex, 1);
+  }
+
+  async function prevInRadio() {
+    if (!radioQueue.length) {
+      throw new Error("Radio inativo.");
+    }
+
+    const previousIndex = radioIndex >= 0 ? radioIndex - 1 : radioQueue.length - 1;
+    return playRadioAt(previousIndex, -1);
+  }
+
+  function getRadioState() {
+    return {
+      active: radioQueue.length > 0,
+      index: radioIndex,
+      total: radioQueue.length,
+      label: radioLabel
+    };
+  }
+
+  function playTrack(track, album, button, options = {}) {
     ensurePlayer();
 
     if (!track?.previewUrl) {
-      return Promise.reject(new Error("Prévia indisponível."));
+      return Promise.reject(new Error("Previa indisponivel."));
+    }
+
+    if (!options.fromRadio && radioQueue.length) {
+      clearRadioState();
     }
 
     const isSameTrack = currentTrack?.id === track.id;
@@ -174,14 +355,18 @@ const WikiPreview = (() => {
       updateButton(activeButton, false);
     }
 
+    if (!button) {
+      clearActiveButton();
+    }
+
     activeButton = button || null;
     currentTrack = track;
 
     cover.src = track.imagem || album?.imagem || PLACEHOLDER_IMAGEM;
-    cover.alt = track.album || album?.album || "Capa do álbum";
+    cover.alt = track.album || album?.album || "Capa do album";
     title.textContent = track.nome;
     meta.textContent = `${track.artista || album?.nome || "Artista"} • ${
-      track.album || album?.album || "Álbum"
+      track.album || album?.album || "Album"
     }`;
     player.classList.add("active");
     document.body.classList.add("has-mini-player");
@@ -192,11 +377,15 @@ const WikiPreview = (() => {
 
     updateButton(activeButton, true);
 
+    if (window.WikibandStorage?.addPlayEvent) {
+      window.WikibandStorage.addPlayEvent(album || track);
+    }
+
     const playPromise = audio.play();
 
     if (playPromise) {
       playPromise.catch((erro) => {
-        console.warn("O navegador bloqueou o play automático:", erro);
+        console.warn("O navegador bloqueou o play automatico:", erro);
         updateButton(activeButton, false);
       });
     }
@@ -214,13 +403,18 @@ const WikiPreview = (() => {
     document.body.classList.remove("has-mini-player");
     currentTrack = null;
     clearActiveButton();
+    clearRadioState();
   }
 
   return {
     formatDuration,
     getAlbumTracks,
     getFirstPreview,
+    getRadioState,
+    nextInRadio,
     playTrack,
+    prevInRadio,
+    startRadio,
     stop
   };
 })();

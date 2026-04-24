@@ -48,6 +48,14 @@
         <option value="todos">Todos os gêneros</option>
       </select>
 
+      <select id="countryFilter">
+        <option value="todos">Todos os países</option>
+      </select>
+
+      <select id="decadeFilter">
+        <option value="todos">Todas as décadas</option>
+      </select>
+
       <select id="sortSelect">
         <option value="relevance">Relevância</option>
         <option value="recent">Mais recentes</option>
@@ -69,11 +77,39 @@
     <section class="painel">
       <div class="painel-header">
         <h2>Resultados</h2>
+        <div class="painel-header-actions">
+          <button class="mini-btn" id="startRadioResultsButton">Rádio dos resultados</button>
+          <button class="mini-btn" id="stopRadioButton">Parar rádio</button>
+        </div>
       </div>
       <div class="bands-grid" id="bandsGrid"></div>
     </section>
 
     <aside class="sidebar">
+      <section class="painel">
+        <div class="painel-header">
+          <h2>Descobrir</h2>
+          <button class="mini-btn" id="refreshDiscoveryButton">Atualizar</button>
+        </div>
+
+        <div class="discovery-panel" id="discoveryPanel">
+          <div class="discovery-block">
+            <h3>Gêneros</h3>
+            <div class="chip-list" id="discoverGenres"></div>
+          </div>
+
+          <div class="discovery-block">
+            <h3>Países</h3>
+            <div class="chip-list" id="discoverCountries"></div>
+          </div>
+
+          <div class="discovery-block">
+            <h3>Décadas</h3>
+            <div class="chip-list" id="discoverDecades"></div>
+          </div>
+        </div>
+      </section>
+
       <section class="painel">
         <div class="painel-header">
           <h2>Histórico</h2>
@@ -103,9 +139,11 @@
   <script src="/assets/js/core/preview-player.js"></script>
   <script src="/assets/js/modules/storage.js"></script>
   <script src="/assets/js/modules/results.js"></script>
+  <script src="/assets/js/modules/links.js"></script>
   <script src="/assets/js/modules/share.js"></script>
   <script src="/assets/js/modules/result-cards.js"></script>
   <script src="/assets/js/modules/sidebar.js"></script>
   <script src="/assets/js/pages/home.js"></script>
+  <script src="/assets/js/core/pwa.js"></script>
 </body>
 </html>

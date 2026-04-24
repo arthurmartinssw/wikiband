@@ -1,12 +1,15 @@
 const detalheContainer = document.getElementById("detalheContainer");
-const bandaSelecionada = JSON.parse(sessionStorage.getItem("bandaSelecionada"));
+
+const Storage = window.WikibandStorage;
+const Results = window.WikibandResults;
+const Links = window.WikibandLinks;
 
 function montarTextoCompartilhar(banda) {
   const foco = banda.musica
     ? `"${banda.musica}", de ${banda.nome}`
-    : `o álbum "${banda.album}", de ${banda.nome}`;
+    : `o album "${banda.album}", de ${banda.nome}`;
 
-  return `Estou ouvindo ${foco} no Wikiband. ${banda.spotifyLink || banda.youtubeLink}`;
+  return `Estou ouvindo ${foco} no Wikiband. ${window.location.href}`;
 }
 
 async function copiarTexto(texto) {
@@ -15,7 +18,7 @@ async function copiarTexto(texto) {
       await navigator.clipboard.writeText(texto);
       return;
     } catch (erro) {
-      console.warn("Clipboard API indisponível, usando fallback:", erro);
+      console.warn("Clipboard API indisponivel, usando fallback:", erro);
     }
   }
 
@@ -38,7 +41,8 @@ async function compartilharDetalhe(banda, botao) {
     if (navigator.share) {
       await navigator.share({
         title: "Wikiband",
-        text: texto
+        text: texto,
+        url: window.location.href
       });
     } else {
       await copiarTexto(texto);
@@ -48,8 +52,40 @@ async function compartilharDetalhe(banda, botao) {
       }, 1400);
     }
   } catch (erro) {
-    console.warn("Compartilhamento cancelado ou indisponível:", erro);
+    console.warn("Compartilhamento cancelado ou indisponivel:", erro);
   }
+}
+
+function adicionarEmColecao(item, onDone) {
+  const collections = Storage.getCollections();
+
+  if (!collections.length) {
+    const nomeNova = window.prompt("Nome da nova coleção:");
+    if (!nomeNova) return;
+
+    const collection = Storage.ensureCollectionByName(nomeNova);
+    if (!collection) return;
+
+    Storage.addItemToCollection(collection.id, item);
+    onDone(`Item salvo em "${collection.name}".`);
+    return;
+  }
+
+  const menu = collections.map((collection, index) => `${index + 1}. ${collection.name}`).join("\n");
+  const entrada = window.prompt(`Digite o número da coleção ou um novo nome:\n\n${menu}`);
+
+  if (!entrada) return;
+
+  const indice = Number(entrada);
+  const collection =
+    Number.isInteger(indice) && indice >= 1 && indice <= collections.length
+      ? collections[indice - 1]
+      : Storage.ensureCollectionByName(entrada);
+
+  if (!collection) return;
+
+  Storage.addItemToCollection(collection.id, item);
+  onDone(`Item salvo em "${collection.name}".`);
 }
 
 async function tocarPrimeiraPreview(banda, previewBtn, previewArea) {
@@ -58,7 +94,16 @@ async function tocarPrimeiraPreview(banda, previewBtn, previewArea) {
   previewArea.innerHTML = `<p class="preview-status">Buscando prévia...</p>`;
 
   try {
-    const preview = await WikiPreview.getFirstPreview(banda);
+    const preview = banda.previewUrl
+      ? {
+          id: banda.trackId || `${banda.nome}-${banda.musica || banda.album}`,
+          nome: banda.musica || banda.album,
+          artista: banda.nome,
+          album: banda.album,
+          previewUrl: banda.previewUrl,
+          imagem: banda.imagem
+        }
+      : await WikiPreview.getFirstPreview(banda);
 
     if (!preview) {
       previewArea.innerHTML = `<p class="preview-status">Prévia indisponível para este álbum.</p>`;
@@ -168,6 +213,12 @@ async function carregarFaixasAlbum(banda) {
   const trackList = document.getElementById("trackList");
   const trackCount = document.getElementById("trackCount");
 
+  if (!banda.albumId) {
+    trackList.innerHTML = `<p class="vazio">Selecione um álbum para ver faixas detalhadas.</p>`;
+    trackCount.textContent = "";
+    return;
+  }
+
   trackList.innerHTML = `<p class="loading">Carregando faixas...</p>`;
   trackCount.textContent = "";
 
@@ -191,7 +242,108 @@ async function carregarFaixasAlbum(banda) {
   }
 }
 
-if (!bandaSelecionada) {
+async function fetchItunes(url) {
+  const resposta = await fetch(url);
+
+  if (!resposta.ok) {
+    throw new Error("Falha ao buscar dados no iTunes.");
+  }
+
+  return resposta.json();
+}
+
+function mapRawItem(rawItem, type) {
+  return Results.montarResultado(rawItem, type);
+}
+
+async function carregarViaQueryParams() {
+  if (!Links) return null;
+
+  const query = Links.readDetailStateFromUrl();
+
+  if (
+    !query.albumId &&
+    !query.trackId &&
+    !query.artistId &&
+    !query.artist &&
+    !query.album &&
+    !query.song
+  ) {
+    return null;
+  }
+
+  try {
+    if (query.trackId) {
+      const dados = await fetchItunes(
+        `https://itunes.apple.com/lookup?id=${encodeURIComponent(query.trackId)}`
+      );
+      const faixa = (dados.results || []).find((item) => item.wrapperType === "track") || dados.results?.[0];
+      if (faixa) return mapRawItem(faixa, "song");
+    }
+
+    if (query.albumId) {
+      const dados = await fetchItunes(
+        `https://itunes.apple.com/lookup?id=${encodeURIComponent(query.albumId)}&entity=song`
+      );
+      const album = (dados.results || []).find((item) => item.wrapperType === "collection") || dados.results?.[0];
+      if (album) return mapRawItem(album, "album");
+    }
+
+    if (query.artistId && query.type === "artist") {
+      const dados = await fetchItunes(
+        `https://itunes.apple.com/lookup?id=${encodeURIComponent(query.artistId)}`
+      );
+      const artist = (dados.results || []).find((item) => item.wrapperType === "artist") || dados.results?.[0];
+      if (artist) return mapRawItem(artist, "artist");
+    }
+
+    if (query.artist && query.song) {
+      const dados = await fetchItunes(
+        `https://itunes.apple.com/search?term=${encodeURIComponent(`${query.artist} ${query.song}`)}&media=music&entity=song&limit=1`
+      );
+      if (dados.results?.[0]) return mapRawItem(dados.results[0], "song");
+    }
+
+    if (query.artist && query.album) {
+      const dados = await fetchItunes(
+        `https://itunes.apple.com/search?term=${encodeURIComponent(`${query.artist} ${query.album}`)}&media=music&entity=album&limit=1`
+      );
+      if (dados.results?.[0]) return mapRawItem(dados.results[0], "album");
+    }
+
+    if (query.artist) {
+      const dados = await fetchItunes(
+        `https://itunes.apple.com/search?term=${encodeURIComponent(query.artist)}&media=music&entity=musicArtist&limit=1`
+      );
+      if (dados.results?.[0]) return mapRawItem(dados.results[0], "artist");
+    }
+  } catch (erro) {
+    console.warn("Nao foi possivel carregar detalhes por URL:", erro);
+  }
+
+  return null;
+}
+
+function carregarViaSessionStorage() {
+  try {
+    return JSON.parse(sessionStorage.getItem("bandaSelecionada"));
+  } catch (erro) {
+    console.warn("Nao foi possivel ler bandaSelecionada:", erro);
+    return null;
+  }
+}
+
+async function carregarBandaSelecionada() {
+  const viaQuery = await carregarViaQueryParams();
+
+  if (viaQuery) {
+    return viaQuery;
+  }
+
+  return carregarViaSessionStorage();
+}
+
+function renderSemSelecao() {
   detalheContainer.innerHTML = `
     <div class="detalhe-content">
       <h1>Nenhuma banda selecionada</h1>
@@ -199,7 +351,22 @@ if (!bandaSelecionada) {
       <a href="/" class="voltar">Voltar para a busca</a>
     </div>
   `;
-} else {
+}
+
+function atualizarUrlCanonica(banda) {
+  if (!Links?.buildDetailUrl) return;
+
+  const canonica = Links.buildDetailUrl(banda);
+  const atual = `${window.location.pathname}${window.location.search}`;
+
+  if (canonica !== atual) {
+    window.history.replaceState({}, "", canonica);
+  }
+}
+
+function renderDetalhes(bandaSelecionada) {
+  const previewDisponivel = Boolean(bandaSelecionada.previewUrl || bandaSelecionada.albumId);
+
   detalheContainer.innerHTML = `
     <img src="${bandaSelecionada.imagem}" class="detalhe-imagem" alt="${bandaSelecionada.nome}">
     <div class="detalhe-content">
@@ -210,8 +377,11 @@ if (!bandaSelecionada) {
       <p><strong>Lançamento:</strong> ${bandaSelecionada.lancamento}</p>
 
       <div class="links-externos">
-        <button class="link-externo" id="detailPreviewButton" type="button">
-          Tocar prévia
+        <button class="link-externo" id="detailPreviewButton" type="button" ${previewDisponivel ? "" : "disabled"}>
+          ${previewDisponivel ? "Tocar prévia" : "Prévia indisponível"}
+        </button>
+        <button class="link-externo" id="addDetailToCollectionButton" type="button">
+          Adicionar à coleção
         </button>
         <button class="link-externo" id="shareDetailButton" type="button">
           Compartilhar
@@ -251,11 +421,21 @@ if (!bandaSelecionada) {
   const previewBtn = document.getElementById("detailPreviewButton");
   const previewArea = document.getElementById("detailPreviewArea");
   const shareBtn = document.getElementById("shareDetailButton");
+  const addCollectionBtn = document.getElementById("addDetailToCollectionButton");
 
   previewBtn.dataset.previewIdleText = "Tocar prévia";
   previewBtn.dataset.previewPlayingText = "Pausar prévia";
-  previewBtn.addEventListener("click", () => {
-    tocarPrimeiraPreview(bandaSelecionada, previewBtn, previewArea);
+
+  if (previewDisponivel) {
+    previewBtn.addEventListener("click", () => {
+      tocarPrimeiraPreview(bandaSelecionada, previewBtn, previewArea);
+    });
+  }
+
+  addCollectionBtn.addEventListener("click", () => {
+    adicionarEmColecao(bandaSelecionada, (mensagem) => {
+      previewArea.innerHTML = `<p class="preview-status">${mensagem}</p>`;
+    });
   });
 
   shareBtn.addEventListener("click", () => {
@@ -265,3 +445,16 @@ if (!bandaSelecionada) {
   carregarFaixasAlbum(bandaSelecionada);
   renderParticipantes(bandaSelecionada);
 }
+
+(async () => {
+  const bandaSelecionada = await carregarBandaSelecionada();
+
+  if (!bandaSelecionada) {
+    renderSemSelecao();
+    return;
+  }
+
+  sessionStorage.setItem("bandaSelecionada", JSON.stringify(bandaSelecionada));
+  atualizarUrlCanonica(bandaSelecionada);
+  renderDetalhes(bandaSelecionada);
+})();
