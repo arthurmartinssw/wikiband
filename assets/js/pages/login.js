@@ -1,5 +1,6 @@
 (function initLoginPage(window, document) {
   const Storage = window.WikibandStorage;
+  const AUTH_EVENT_KEY = "wikiband_auth_event";
   const form = document.getElementById("loginForm");
   const emailInput = document.getElementById("loginEmail");
   const passwordInput = document.getElementById("loginPassword");
@@ -21,6 +22,37 @@
     if (type === "success") {
       statusElement.classList.add("is-success");
     }
+  }
+
+  function createAuthEvent(action, email) {
+    localStorage.setItem(
+      AUTH_EVENT_KEY,
+      JSON.stringify({
+        action,
+        email: String(email || "").toLowerCase(),
+        ts: Date.now()
+      })
+    );
+  }
+
+  function completeLogin(email) {
+    const opener = window.opener;
+
+    createAuthEvent("login", email);
+
+    if (opener && !opener.closed) {
+      try {
+        opener.focus();
+        opener.location.reload();
+      } catch (erro) {
+        console.warn("Nao foi possivel atualizar a aba de origem:", erro);
+      }
+    }
+
+    window.close();
+    window.setTimeout(() => {
+      window.location.href = "/index.html";
+    }, 320);
   }
 
   if (!Storage || typeof Storage.authenticateUser !== "function") {
@@ -53,8 +85,8 @@
 
       setFeedback("Login realizado com sucesso. Redirecionando...", "success");
       window.setTimeout(() => {
-        window.location.href = "/index.html";
-      }, 700);
+        completeLogin(result.user?.email || email);
+      }, 500);
     } catch (erro) {
       console.warn("Falha ao autenticar usuario:", erro);
       setFeedback("Nao foi possivel concluir o login agora.", "error");

@@ -22,7 +22,7 @@
         <a href="/index.html">Início</a>
         <a href="/favoritos.html">Favoritos</a>
         <a href="/sobre.html">Sobre a Wikiband</a>
-        <a href="/login.html" target="_blank" rel="noopener noreferrer">Login</a>
+        <a href="/login.html" target="_blank" data-auth-link="true">Login</a>
       </nav>
     </div>
   </header>
@@ -32,7 +32,7 @@
       <h2>Sobre a Wikiband</h2>
       <p>A Wikiband é uma ferramenta para buscar artistas, álbuns e músicas reais usando dados da API pública do iTunes.</p>
       <p>Você pode filtrar resultados por gênero, país e década, salvar favoritos localmente e montar coleções personalizadas.</p>
-      <p>As informações e os favoritos ficam no seu navegador, sem necessidade de conta.</p>
+      <p>As informações de favoritos e coleções ficam vinculadas à conta logada neste navegador.</p>
     </section>
 
     <section class="painel sobre-box">
@@ -47,6 +47,8 @@
     </section>
   </main>
 
+  <script src="/assets/js/modules/storage.js"></script>
+  <script src="/assets/js/modules/auth-ui.js"></script>
   <script src="/assets/js/core/pwa.js"></script>
 </body>
 </html>

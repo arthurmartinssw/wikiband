@@ -88,6 +88,7 @@ body.has-mini-player {
 }
 
 .menu a,
+.menu-auth-btn,
 .mode-btn,
 .link-externo,
 .search-box button,
@@ -117,7 +118,13 @@ body.has-mini-player {
   color: var(--muted);
 }
 
+.menu-auth-btn {
+  padding: 9px 12px;
+  color: var(--muted);
+}
+
 .menu a:hover,
+.menu-auth-btn:hover,
 .link-externo:hover,
 .secondary-btn:hover,
 .track-preview-btn:hover,

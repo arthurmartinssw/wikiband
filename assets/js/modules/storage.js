@@ -6,6 +6,7 @@
   const COLLECTIONS_KEY = "wikiband_collections";
   const USER_KEY_PREFIX = "wikiband_user_";
   const SESSION_KEY = "wikiband_session";
+  const SCOPED_SEPARATOR = "__";
 
   function readList(key) {
     try {
@@ -42,6 +43,37 @@
   function getUserStorageKey(email) {
     const normalizedEmail = normalizeEmail(email);
     return `${USER_KEY_PREFIX}${encodeURIComponent(normalizedEmail)}`;
+  }
+
+  function getStorageScopeId() {
+    const session = getCurrentSession();
+    if (!session?.email) return null;
+    return encodeURIComponent(session.email);
+  }
+
+  function getScopedKey(baseKey) {
+    const scopeId = getStorageScopeId();
+    if (!scopeId) return null;
+    return `${baseKey}${SCOPED_SEPARATOR}${scopeId}`;
+  }
+
+  function readScopedList(baseKey) {
+    const key = getScopedKey(baseKey);
+    if (!key) return [];
+    return readList(key);
+  }
+
+  function saveScopedList(baseKey, items) {
+    const key = getScopedKey(baseKey);
+    if (!key) return items;
+    saveList(key, items);
+    return items;
+  }
+
+  function clearScopedList(baseKey) {
+    const key = getScopedKey(baseKey);
+    if (!key) return;
+    localStorage.removeItem(key);
   }
 
   function bytesToHex(bytes) {
@@ -261,7 +293,7 @@
   }
 
   function getHistory() {
-    return readList(HISTORY_KEY);
+    return readScopedList(HISTORY_KEY);
   }
 
   function addHistoryTerm(term, type) {
@@ -273,16 +305,16 @@
 
     history.unshift({ term, type });
     history = history.slice(0, 12);
-    saveList(HISTORY_KEY, history);
+    saveScopedList(HISTORY_KEY, history);
     return history;
   }
 
   function clearHistory() {
-    localStorage.removeItem(HISTORY_KEY);
+    clearScopedList(HISTORY_KEY);
   }
 
   function getAlbumFavorites() {
-    return readList(ALBUM_FAVORITES_KEY);
+    return readScopedList(ALBUM_FAVORITES_KEY);
   }
 
   function isAlbumFavorite(albumId) {
@@ -298,16 +330,16 @@
       favorites.unshift(album);
     }
 
-    saveList(ALBUM_FAVORITES_KEY, favorites);
+    saveScopedList(ALBUM_FAVORITES_KEY, favorites);
     return favorites;
   }
 
   function clearAlbumFavorites() {
-    localStorage.removeItem(ALBUM_FAVORITES_KEY);
+    clearScopedList(ALBUM_FAVORITES_KEY);
   }
 
   function getBandFavorites() {
-    return readList(BAND_FAVORITES_KEY);
+    return readScopedList(BAND_FAVORITES_KEY);
   }
 
   function isBandFavorite(bandaId) {
@@ -323,16 +355,16 @@
       favorites.unshift(banda);
     }
 
-    saveList(BAND_FAVORITES_KEY, favorites);
+    saveScopedList(BAND_FAVORITES_KEY, favorites);
     return favorites;
   }
 
   function clearBandFavorites() {
-    localStorage.removeItem(BAND_FAVORITES_KEY);
+    clearScopedList(BAND_FAVORITES_KEY);
   }
 
   function getPlayHistory() {
-    return readList(PLAY_HISTORY_KEY);
+    return readScopedList(PLAY_HISTORY_KEY);
   }
 
   function addPlayEvent(item) {
@@ -352,23 +384,23 @@
 
     const plays = getPlayHistory();
     plays.unshift(event);
-    saveList(PLAY_HISTORY_KEY, plays.slice(0, 240));
+    saveScopedList(PLAY_HISTORY_KEY, plays.slice(0, 240));
     return plays;
   }
 
   function clearPlayHistory() {
-    localStorage.removeItem(PLAY_HISTORY_KEY);
+    clearScopedList(PLAY_HISTORY_KEY);
   }
 
   function getCollections() {
-    return readList(COLLECTIONS_KEY).map((collection) => ({
+    return readScopedList(COLLECTIONS_KEY).map((collection) => ({
       ...collection,
       items: Array.isArray(collection.items) ? collection.items : []
     }));
   }
 
   function saveCollections(collections) {
-    saveList(COLLECTIONS_KEY, collections);
+    saveScopedList(COLLECTIONS_KEY, collections);
     return collections;
   }
 
