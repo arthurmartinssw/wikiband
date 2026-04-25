@@ -16,9 +16,13 @@ const Storage = window.WikibandStorage;
 const Links = window.WikibandLinks;
 
 function abrirDetalhes(item) {
-  const detailUrl = Links?.buildDetailUrl(item) || "/banda";
+  const detailUrl = Links?.buildDetailUrl(item) || "/?view=detail";
   sessionStorage.setItem("bandaSelecionada", JSON.stringify(item));
-  window.location.href = detailUrl;
+  if (window.WikibandViewRouter?.openDetail) {
+    window.WikibandViewRouter.openDetail(item);
+  } else {
+    window.location.href = detailUrl;
+  }
 }
 
 async function tocarPreviewAlbum(album, button, status) {
@@ -27,7 +31,7 @@ async function tocarPreviewAlbum(album, button, status) {
   status.textContent = "Buscando prévia...";
 
   try {
-    const preview = await WikiPreview.getFirstPreview(album);
+    const preview = await window.WikiPreview.getFirstPreview(album);
 
     if (!preview) {
       status.textContent = "Prévia indisponível para este álbum.";
@@ -37,7 +41,7 @@ async function tocarPreviewAlbum(album, button, status) {
 
     status.textContent = `Prévia: ${preview.nome}`;
     button.disabled = false;
-    WikiPreview.playTrack(preview, album, button);
+    window.WikiPreview.playTrack(preview, album, button);
   } catch (erro) {
     console.error("Erro ao carregar prévia:", erro);
     status.textContent = "Não foi possível carregar a prévia agora.";
@@ -344,7 +348,7 @@ function renderCollections() {
 
 clearAlbumFavoritesButton.addEventListener("click", () => {
   Storage.clearAlbumFavorites();
-  WikiPreview.stop();
+  window.WikiPreview.stop();
   renderAlbumFavorites();
   renderDashboard();
 });
@@ -363,14 +367,14 @@ startFavoritesRadioButton.addEventListener("click", async () => {
   }
 
   try {
-    await WikiPreview.startRadio(favorites, { label: "Rádio dos favoritos" });
+    await window.WikiPreview.startRadio(favorites, { label: "Rádio dos favoritos" });
   } catch (erro) {
     console.warn("Não foi possível iniciar rádio dos favoritos:", erro);
   }
 });
 
 stopRadioFavoritesButton.addEventListener("click", () => {
-  WikiPreview.stop();
+  window.WikiPreview.stop();
 });
 
 clearPlayHistoryButton.addEventListener("click", () => {
@@ -388,7 +392,16 @@ createCollectionButton.addEventListener("click", () => {
   renderDashboard();
 });
 
-renderAlbumFavorites();
-renderBandFavorites();
-renderDashboard();
-renderCollections();
+function refreshFavoritosPage() {
+  renderAlbumFavorites();
+  renderBandFavorites();
+  renderDashboard();
+  renderCollections();
+}
+
+refreshFavoritosPage();
+
+window.addEventListener("wikiband:view-change", (event) => {
+  if (event.detail?.view !== "favorites") return;
+  refreshFavoritosPage();
+});

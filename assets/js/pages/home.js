@@ -58,9 +58,13 @@ function obterDecada(valor) {
 }
 
 function abrirDetalhes(item) {
-  const detailUrl = Links?.buildDetailUrl(item) || "/banda";
+  const detailUrl = Links?.buildDetailUrl(item) || "/?view=detail";
   sessionStorage.setItem("bandaSelecionada", JSON.stringify(item));
-  window.open(detailUrl, "_blank");
+  if (window.WikibandViewRouter?.openDetail) {
+    window.WikibandViewRouter.openDetail(item);
+  } else {
+    window.location.href = detailUrl;
+  }
 }
 
 function explorarAlbunsDoArtista(artista) {
@@ -257,7 +261,7 @@ async function tocarPreviewAlbum(album, card, previewBtn) {
   previewArea.innerHTML = `<p class="preview-status">Buscando prévia...</p>`;
 
   try {
-    const preview = await WikiPreview.getFirstPreview(album);
+    const preview = await window.WikiPreview.getFirstPreview(album);
 
     if (!preview) {
       previewArea.innerHTML = `<p class="preview-status">Prévia indisponível para este álbum.</p>`;
@@ -267,7 +271,7 @@ async function tocarPreviewAlbum(album, card, previewBtn) {
 
     previewArea.innerHTML = `<p class="preview-status"><strong>Prévia:</strong> ${preview.nome}</p>`;
     previewBtn.disabled = false;
-    WikiPreview.playTrack(preview, album, previewBtn);
+    window.WikiPreview.playTrack(preview, album, previewBtn);
   } catch (erro) {
     console.error("Erro ao carregar prévia:", erro);
     previewArea.innerHTML = `<p class="preview-status">Não foi possível carregar a prévia agora.</p>`;
@@ -289,7 +293,7 @@ function tocarPreviewMusica(musica, previewBtn) {
     imagem: musica.imagem
   };
 
-  WikiPreview.playTrack(faixa, musica, previewBtn);
+  window.WikiPreview.playTrack(faixa, musica, previewBtn);
 }
 
 function toggleAlbumFavorite(album) {
@@ -552,7 +556,7 @@ startRadioResultsButton.addEventListener("click", async () => {
   }
 
   try {
-    await WikiPreview.startRadio(itens, { label: "Rádio dos resultados" });
+    await window.WikiPreview.startRadio(itens, { label: "Rádio dos resultados" });
     statusText.textContent = "Rádio dos resultados iniciado.";
   } catch (erro) {
     console.warn("Não foi possível iniciar o rádio:", erro);
@@ -561,7 +565,7 @@ startRadioResultsButton.addEventListener("click", async () => {
 });
 
 stopRadioButton.addEventListener("click", () => {
-  WikiPreview.stop();
+  window.WikiPreview.stop();
   statusText.textContent = "Rádio parado.";
 });
 
@@ -584,6 +588,9 @@ clearBandFavoritesButton.addEventListener("click", () => {
 
 window.addEventListener("popstate", () => {
   if (!Links) return;
+  if (window.WikibandViewRouter?.readViewFromUrl && window.WikibandViewRouter.readViewFromUrl() !== "home") {
+    return;
+  }
 
   const { term, type } = Links.readSearchStateFromUrl();
   searchType = type;
@@ -603,6 +610,9 @@ window.addEventListener("popstate", () => {
 
 function inicializarBuscaDaUrl() {
   if (!Links) return;
+  if (window.WikibandViewRouter?.readViewFromUrl && window.WikibandViewRouter.readViewFromUrl() !== "home") {
+    return;
+  }
 
   const { term, type } = Links.readSearchStateFromUrl();
 
@@ -621,3 +631,10 @@ renderBandFavorites();
 preencherFiltros([]);
 renderDiscovery([]);
 inicializarBuscaDaUrl();
+
+window.addEventListener("wikiband:view-change", (event) => {
+  if (event.detail?.view !== "home") return;
+  renderHistory();
+  renderFavorites();
+  renderBandFavorites();
+});
