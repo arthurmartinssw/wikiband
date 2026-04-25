@@ -4,6 +4,8 @@
   const BAND_FAVORITES_KEY = "wikiband_band_favorites";
   const PLAY_HISTORY_KEY = "wikiband_play_history";
   const COLLECTIONS_KEY = "wikiband_collections";
+  const USER_KEY_PREFIX = "wikiband_user_";
+  const SESSION_KEY = "wikiband_session";
 
   function readList(key) {
     try {
@@ -16,6 +18,199 @@
 
   function saveList(key, items) {
     localStorage.setItem(key, JSON.stringify(items));
+  }
+
+  function readObject(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (erro) {
+      console.warn(`Nao foi possivel ler ${key}:`, erro);
+      return null;
+    }
+  }
+
+  function normalizeEmail(email) {
+    return String(email || "").trim().toLowerCase();
+  }
+
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  function getUserStorageKey(email) {
+    const normalizedEmail = normalizeEmail(email);
+    return `${USER_KEY_PREFIX}${encodeURIComponent(normalizedEmail)}`;
+  }
+
+  function bytesToHex(bytes) {
+    return Array.from(bytes)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  async function hashPassword(password) {
+    const normalizedPassword = String(password || "");
+    if (!normalizedPassword) return null;
+
+    if (!window.crypto || !window.crypto.subtle || typeof TextEncoder === "undefined") {
+      return null;
+    }
+
+    const encoder = new TextEncoder();
+    const data = encoder.encode(normalizedPassword);
+    const digest = await window.crypto.subtle.digest("SHA-256", data);
+    return bytesToHex(new Uint8Array(digest));
+  }
+
+  function saveCurrentSession(session) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    return session;
+  }
+
+  function getCurrentSession() {
+    const session = readObject(SESSION_KEY);
+    const loggedAt = Number(session?.loggedAt);
+
+    if (!session || !session.email || !session.nome || !Number.isFinite(loggedAt)) {
+      return null;
+    }
+
+    return {
+      nome: String(session.nome),
+      email: normalizeEmail(session.email),
+      loggedAt
+    };
+  }
+
+  function clearCurrentSession() {
+    localStorage.removeItem(SESSION_KEY);
+  }
+
+  async function registerUser({ nome, email, senha } = {}) {
+    const normalizedName = String(nome || "").trim();
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedPassword = String(senha || "");
+
+    if (!normalizedName || !normalizedEmail || !normalizedPassword) {
+      return {
+        ok: false,
+        code: "VALIDATION_ERROR",
+        message: "Preencha nome, e-mail e senha."
+      };
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      return {
+        ok: false,
+        code: "VALIDATION_ERROR",
+        message: "Informe um e-mail valido."
+      };
+    }
+
+    const userKey = getUserStorageKey(normalizedEmail);
+    if (localStorage.getItem(userKey)) {
+      return {
+        ok: false,
+        code: "EMAIL_EXISTS",
+        message: "Este e-mail ja esta cadastrado."
+      };
+    }
+
+    const passwordHash = await hashPassword(normalizedPassword);
+    if (!passwordHash) {
+      return {
+        ok: false,
+        code: "VALIDATION_ERROR",
+        message: "Nao foi possivel proteger a senha neste navegador."
+      };
+    }
+
+    const userRecord = {
+      nome: normalizedName,
+      email: normalizedEmail,
+      passwordHash,
+      createdAt: Date.now()
+    };
+
+    localStorage.setItem(userKey, JSON.stringify(userRecord));
+
+    return {
+      ok: true,
+      code: "REGISTERED",
+      message: "Conta criada com sucesso.",
+      user: {
+        nome: userRecord.nome,
+        email: userRecord.email
+      }
+    };
+  }
+
+  async function authenticateUser({ email, senha } = {}) {
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedPassword = String(senha || "");
+
+    if (!normalizedEmail || !normalizedPassword) {
+      return {
+        ok: false,
+        code: "VALIDATION_ERROR",
+        message: "Informe e-mail e senha."
+      };
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      return {
+        ok: false,
+        code: "VALIDATION_ERROR",
+        message: "Informe um e-mail valido."
+      };
+    }
+
+    const userKey = getUserStorageKey(normalizedEmail);
+    const savedUser = readObject(userKey);
+
+    if (!savedUser || !savedUser.passwordHash) {
+      clearCurrentSession();
+      return {
+        ok: false,
+        code: "INVALID_CREDENTIALS",
+        message: "E-mail ou senha invalidos."
+      };
+    }
+
+    const passwordHash = await hashPassword(normalizedPassword);
+    if (!passwordHash) {
+      return {
+        ok: false,
+        code: "VALIDATION_ERROR",
+        message: "Nao foi possivel validar a senha neste navegador."
+      };
+    }
+
+    if (passwordHash !== savedUser.passwordHash) {
+      clearCurrentSession();
+      return {
+        ok: false,
+        code: "INVALID_CREDENTIALS",
+        message: "E-mail ou senha invalidos."
+      };
+    }
+
+    const session = {
+      nome: String(savedUser.nome || ""),
+      email: normalizedEmail,
+      loggedAt: Date.now()
+    };
+
+    saveCurrentSession(session);
+
+    return {
+      ok: true,
+      code: "AUTHENTICATED",
+      message: "Login realizado com sucesso.",
+      user: session
+    };
   }
 
   function parseYear(valor) {
@@ -309,10 +504,12 @@
   }
 
   window.WikibandStorage = {
+    authenticateUser,
     addHistoryTerm,
     addItemToCollection,
     addPlayEvent,
     buildItemKey,
+    clearCurrentSession,
     clearAlbumFavorites,
     clearBandFavorites,
     clearHistory,
@@ -323,11 +520,13 @@
     getAlbumFavorites,
     getBandFavorites,
     getCollections,
+    getCurrentSession,
     getDashboardData,
     getHistory,
     getPlayHistory,
     isAlbumFavorite,
     isBandFavorite,
+    registerUser,
     removeItemFromCollection,
     renameCollection,
     toggleAlbumFavorite,

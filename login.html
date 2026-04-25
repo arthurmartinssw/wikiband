@@ -11,70 +11,57 @@
   <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
-  <header class="topo">
-    <div class="topo-conteudo">
-      <div>
-        <h1>Wikiband</h1>
-        <p>Acesse sua conta para sincronizar favoritos.</p>
-      </div>
-
-      <nav class="menu">
-        <a href="/index.html">Início</a>
-        <a href="/favoritos.html">Favoritos</a>
-        <a href="/sobre.html">Sobre a Wikiband</a>
-        <a href="/login.html" aria-current="page">Login</a>
-      </nav>
+  <header class="topo topo-menor auth-topo">
+    <div class="topo-conteudo auth-topo-conteudo">
+      <a href="/index.html" class="auth-brand">Wikiband</a>
+      <p>Acesse sua conta para sincronizar seus favoritos.</p>
     </div>
   </header>
 
-  <main class="login-page">
-    <section class="login-layout">
-      <article class="painel login-hero">
-        <p class="login-badge">Acesso</p>
-        <h2>Entrar na Wikiband</h2>
-        <p>
-          Voce, quer conseguir salvar seus favoritos e bandas? Faça Login!
+  <main class="auth-page">
+    <section class="painel auth-card" aria-labelledby="loginTitle">
+      <h1 id="loginTitle">Entrar na Wikiband</h1>
+      <p class="auth-subtitle">Informe seu e-mail e senha para continuar.</p>
+
+      <form id="loginForm" class="auth-form" action="#" method="post" novalidate>
+        <label class="auth-field" for="loginEmail">
+          <span>E-mail</span>
+          <input
+            id="loginEmail"
+            type="email"
+            name="email"
+            placeholder="voce@exemplo.com"
+            autocomplete="email"
+            required
+          />
+        </label>
+
+        <label class="auth-field" for="loginPassword">
+          <span>Senha</span>
+          <input
+            id="loginPassword"
+            type="password"
+            name="password"
+            placeholder="********"
+            autocomplete="current-password"
+            required
+          />
+        </label>
+
+        <p id="loginStatus" class="auth-feedback" role="status" aria-live="polite"></p>
+
+        <button id="loginSubmit" class="primary-btn" type="submit">Entrar</button>
+
+        <p class="sign-up">
+          E novo na Wikiband?
+          <a href="/cadastro.html" class="create-account-link">Crie uma conta!</a>
         </p>
-        
-        <p>
-          Deixe salvo sua historia. Sincronize seus favoritos e acesse de qualquer lugar. Acesse sua conta para aproveitar ao máximo a Wikiband!
-        </p>
-      </article>
-
-      <section class="painel login-card" aria-labelledby="loginTitle">
-        <div class="login-avatar" aria-hidden="true">
-          <svg viewBox="0 0 64 64" role="img" aria-label="Avatar de login">
-            <circle cx="32" cy="32" r="30" />
-            <circle cx="32" cy="24" r="11" />
-            <path d="M13 52c3-9 10-14 19-14s16 5 19 14" />
-          </svg>
-        </div>
-
-        <h2 id="loginTitle">Bem-vindo(a)</h2>
-        <p class="login-subtitle">Informe seu e-mail e senha para entrar.</p>
-
-        <form class="login-form" action="#" method="post">
-          <label class="login-field" for="loginEmail">
-            <span>E-mail</span>
-            <input id="loginEmail" type="email" name="email" placeholder="voce@exemplo.com" autocomplete="email" />
-          </label>
-
-          <label class="login-field" for="loginPassword">
-            <span>Senha</span>
-            <input id="loginPassword" type="password" name="password" placeholder="********" autocomplete="current-password" />
-          </label>
-
-          <div class="login-actions">
-            <button class="primary-btn" type="button">Entrar</button>
-            <button class="secondary-btn" type="button">Salvar senha</button>
-          </div>
-        </form>
-
-        <p class="login-note">Interface para testes... v1.0</p>
-      </section>
+      </form>
     </section>
   </main>
 
+  <script src="/assets/js/modules/storage.js"></script>
+  <script src="/assets/js/pages/login.js"></script>
   <script src="/assets/js/core/pwa.js"></script>
 </body>
 </html>
