@@ -765,6 +765,7 @@ body.has-mini-player {
   background: radial-gradient(circle at top right, #2b3f35 0%, #1a1e1a 50%, #171917 100%);
 }
 
+
 .login-hero::after {
   content: "";
   position: absolute;
@@ -800,7 +801,7 @@ body.has-mini-player {
 
 .login-card {
   max-width: 520px;
-  margin-left: auto;
+  margin-left: 0;
 }
 
 .login-avatar {
