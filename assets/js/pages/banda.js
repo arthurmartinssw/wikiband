@@ -103,7 +103,7 @@ async function tocarPrimeiraPreview(banda, previewBtn, previewArea) {
           previewUrl: banda.previewUrl,
           imagem: banda.imagem
         }
-      : await window.WikiPreview.getFirstPreview(banda);
+      : await WikiPreview.getFirstPreview(banda);
 
     if (!preview) {
       previewArea.innerHTML = `<p class="preview-status">Prévia indisponível para este álbum.</p>`;
@@ -113,7 +113,7 @@ async function tocarPrimeiraPreview(banda, previewBtn, previewArea) {
 
     previewArea.innerHTML = `<p class="preview-status"><strong>Prévia:</strong> ${preview.nome}</p>`;
     previewBtn.disabled = false;
-    window.WikiPreview.playTrack(preview, banda, previewBtn);
+    WikiPreview.playTrack(preview, banda, previewBtn);
   } catch (erro) {
     console.error("Erro ao carregar prévia:", erro);
     previewArea.innerHTML = `<p class="preview-status">Não foi possível carregar a prévia agora.</p>`;
@@ -138,7 +138,7 @@ function criarLinhaFaixa(faixa, banda) {
   title.textContent = faixa.nome;
 
   const meta = document.createElement("span");
-  meta.textContent = `${faixa.artista} • ${window.WikiPreview.formatDuration(faixa.duracaoMs)}`;
+  meta.textContent = `${faixa.artista} • ${WikiPreview.formatDuration(faixa.duracaoMs)}`;
 
   info.append(title, meta);
 
@@ -151,7 +151,7 @@ function criarLinhaFaixa(faixa, banda) {
   if (faixa.previewUrl) {
     button.textContent = "Tocar";
     button.addEventListener("click", () => {
-      window.WikiPreview.playTrack(faixa, banda, button);
+      WikiPreview.playTrack(faixa, banda, button);
     });
   } else {
     button.textContent = "Sem prévia";
@@ -191,7 +191,7 @@ function renderParticipantes(banda) {
   const title = document.getElementById("participantsTitle");
   const note = document.getElementById("participantsNote");
   const list = document.getElementById("participantsList");
-  const participants = window.WikiArtistProfiles.getParticipants(banda);
+  const participants = WikiArtistProfiles.getParticipants(banda);
 
   if (!participants) {
     section.hidden = true;
@@ -223,7 +223,7 @@ async function carregarFaixasAlbum(banda) {
   trackCount.textContent = "";
 
   try {
-    const faixas = await window.WikiPreview.getAlbumTracks(banda);
+    const faixas = await WikiPreview.getAlbumTracks(banda);
 
     if (!faixas.length) {
       trackList.innerHTML = `<p class="vazio">Nenhuma faixa encontrada para este álbum.</p>`;

@@ -31,6 +31,36 @@ const Links = window.WikibandLinks;
 let ultimoResultadoBruto = [];
 let debounceTimer = null;
 let searchType = "album";
+const detalhePrecarregado = new Set();
+
+function preCarregarDetalhe(url = "/banda") {
+  const destino = String(url || "/banda");
+
+  if (detalhePrecarregado.has(destino)) {
+    return;
+  }
+
+  detalhePrecarregado.add(destino);
+
+  const prefetch = document.createElement("link");
+  prefetch.rel = "prefetch";
+  prefetch.as = "document";
+  prefetch.href = destino;
+  document.head.appendChild(prefetch);
+
+  fetch(destino, { credentials: "same-origin" }).catch(() => {
+    detalhePrecarregado.delete(destino);
+  });
+}
+
+function agendarPreCarregamentoDetalhe() {
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(() => preCarregarDetalhe("/banda"), { timeout: 1200 });
+    return;
+  }
+
+  setTimeout(() => preCarregarDetalhe("/banda"), 500);
+}
 
 function getSearchOptions() {
   return {
@@ -60,11 +90,8 @@ function obterDecada(valor) {
 function abrirDetalhes(item) {
   const detailUrl = Links?.buildDetailUrl(item) || "/banda";
   sessionStorage.setItem("bandaSelecionada", JSON.stringify(item));
-  if (window.WikibandViewRouter?.openDetail) {
-    window.WikibandViewRouter.openDetail(item);
-  } else {
-    window.location.href = detailUrl;
-  }
+  preCarregarDetalhe(detailUrl);
+  window.location.href = detailUrl;
 }
 
 function explorarAlbunsDoArtista(artista) {
@@ -261,7 +288,7 @@ async function tocarPreviewAlbum(album, card, previewBtn) {
   previewArea.innerHTML = `<p class="preview-status">Buscando prévia...</p>`;
 
   try {
-    const preview = await window.WikiPreview.getFirstPreview(album);
+    const preview = await WikiPreview.getFirstPreview(album);
 
     if (!preview) {
       previewArea.innerHTML = `<p class="preview-status">Prévia indisponível para este álbum.</p>`;
@@ -271,7 +298,7 @@ async function tocarPreviewAlbum(album, card, previewBtn) {
 
     previewArea.innerHTML = `<p class="preview-status"><strong>Prévia:</strong> ${preview.nome}</p>`;
     previewBtn.disabled = false;
-    window.WikiPreview.playTrack(preview, album, previewBtn);
+    WikiPreview.playTrack(preview, album, previewBtn);
   } catch (erro) {
     console.error("Erro ao carregar prévia:", erro);
     previewArea.innerHTML = `<p class="preview-status">Não foi possível carregar a prévia agora.</p>`;
@@ -293,7 +320,7 @@ function tocarPreviewMusica(musica, previewBtn) {
     imagem: musica.imagem
   };
 
-  window.WikiPreview.playTrack(faixa, musica, previewBtn);
+  WikiPreview.playTrack(faixa, musica, previewBtn);
 }
 
 function toggleAlbumFavorite(album) {
@@ -372,7 +399,13 @@ function renderizarResultados(lista) {
   statusText.textContent = `${lista.length} ${Results.obterTipoTexto(searchType)} encontrado(s).`;
 
   lista.forEach((item) => {
-    bandsGrid.appendChild(Cards.criarResultadoCard(item, getCardContext()));
+    const card = Cards.criarResultadoCard(item, getCardContext());
+    card.addEventListener("mouseenter", () => preCarregarDetalhe("/banda"), { once: true });
+    card.addEventListener("touchstart", () => preCarregarDetalhe("/banda"), {
+      once: true,
+      passive: true
+    });
+    bandsGrid.appendChild(card);
   });
 }
 
@@ -556,7 +589,7 @@ startRadioResultsButton.addEventListener("click", async () => {
   }
 
   try {
-    await window.WikiPreview.startRadio(itens, { label: "Rádio dos resultados" });
+    await WikiPreview.startRadio(itens, { label: "Rádio dos resultados" });
     statusText.textContent = "Rádio dos resultados iniciado.";
   } catch (erro) {
     console.warn("Não foi possível iniciar o rádio:", erro);
@@ -565,7 +598,7 @@ startRadioResultsButton.addEventListener("click", async () => {
 });
 
 stopRadioButton.addEventListener("click", () => {
-  window.WikiPreview.stop();
+  WikiPreview.stop();
   statusText.textContent = "Rádio parado.";
 });
 
@@ -624,4 +657,5 @@ renderFavorites();
 renderBandFavorites();
 preencherFiltros([]);
 renderDiscovery([]);
+agendarPreCarregamentoDetalhe();
 inicializarBuscaDaUrl();
