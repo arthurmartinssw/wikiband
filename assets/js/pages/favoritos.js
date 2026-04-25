@@ -16,7 +16,7 @@ const Storage = window.WikibandStorage;
 const Links = window.WikibandLinks;
 
 function abrirDetalhes(item) {
-  const detailUrl = Links?.buildDetailUrl(item) || "/banda";
+  const detailUrl = Links?.buildDetailUrl(item) || "/banda.html";
   sessionStorage.setItem("bandaSelecionada", JSON.stringify(item));
   window.location.href = detailUrl;
 }

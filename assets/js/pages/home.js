@@ -32,9 +32,10 @@ let ultimoResultadoBruto = [];
 let debounceTimer = null;
 let searchType = "album";
 const detalhePrecarregado = new Set();
+const DETAIL_PAGE_URL = "/banda.html";
 
-function preCarregarDetalhe(url = "/banda") {
-  const destino = String(url || "/banda");
+function preCarregarDetalhe(url = DETAIL_PAGE_URL) {
+  const destino = String(url || DETAIL_PAGE_URL);
 
   if (detalhePrecarregado.has(destino)) {
     return;
@@ -55,11 +56,11 @@ function preCarregarDetalhe(url = "/banda") {
 
 function agendarPreCarregamentoDetalhe() {
   if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(() => preCarregarDetalhe("/banda"), { timeout: 1200 });
+    window.requestIdleCallback(() => preCarregarDetalhe(DETAIL_PAGE_URL), { timeout: 1200 });
     return;
   }
 
-  setTimeout(() => preCarregarDetalhe("/banda"), 500);
+  setTimeout(() => preCarregarDetalhe(DETAIL_PAGE_URL), 500);
 }
 
 function getSearchOptions() {
@@ -88,7 +89,7 @@ function obterDecada(valor) {
 }
 
 function abrirDetalhes(item) {
-  const detailUrl = Links?.buildDetailUrl(item) || "/banda";
+  const detailUrl = Links?.buildDetailUrl(item) || DETAIL_PAGE_URL;
   sessionStorage.setItem("bandaSelecionada", JSON.stringify(item));
   preCarregarDetalhe(detailUrl);
   window.location.href = detailUrl;
@@ -400,8 +401,8 @@ function renderizarResultados(lista) {
 
   lista.forEach((item) => {
     const card = Cards.criarResultadoCard(item, getCardContext());
-    card.addEventListener("mouseenter", () => preCarregarDetalhe("/banda"), { once: true });
-    card.addEventListener("touchstart", () => preCarregarDetalhe("/banda"), {
+    card.addEventListener("mouseenter", () => preCarregarDetalhe(DETAIL_PAGE_URL), { once: true });
+    card.addEventListener("touchstart", () => preCarregarDetalhe(DETAIL_PAGE_URL), {
       once: true,
       passive: true
     });

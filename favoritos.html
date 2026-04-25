@@ -3,12 +3,96 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Redirecionando | Wikiband</title>
-  <script>
-    window.location.replace('/?view=favorites');
-  </script>
+  <title>Favoritos | Wikiband</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
-  <p>Redirecionando...</p>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Wikiband</h1>
+        <p>Seu espaço para acompanhar favoritos, coleções e estatísticas musicais.</p>
+      </div>
+
+      <nav class="menu">
+        <a href="/index.html">Início</a>
+        <a href="/favoritos.html">Favoritos</a>
+        <a href="/sobre.html">Sobre a Wikiband</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="favoritos-container">
+    <section class="painel">
+      <div class="painel-header">
+        <h2>Painel</h2>
+        <button class="mini-btn danger" id="clearPlayHistoryButton" type="button">Limpar reproduções</button>
+      </div>
+
+      <div id="dashboardGrid" class="dashboard-grid"></div>
+
+      <div class="dashboard-lists">
+        <article class="dashboard-list">
+          <h3>Top gêneros</h3>
+          <div class="insight-list" id="topGenresList"></div>
+        </article>
+
+        <article class="dashboard-list">
+          <h3>Top artistas</h3>
+          <div class="insight-list" id="topArtistsList"></div>
+        </article>
+
+        <article class="dashboard-list">
+          <h3>Top décadas</h3>
+          <div class="insight-list" id="topDecadesList"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="painel">
+      <div class="painel-header">
+        <h2>Rádio dos favoritos</h2>
+        <div class="painel-header-actions">
+          <button class="mini-btn" id="startFavoritesRadioButton" type="button">Iniciar rádio</button>
+          <button class="mini-btn" id="stopRadioFavoritesButton" type="button">Parar rádio</button>
+        </div>
+      </div>
+      <p class="status">Toque seus álbuns favoritos em sequência quando houver prévia disponível.</p>
+    </section>
+
+    <section class="painel">
+      <div class="painel-header">
+        <h2>Coleções</h2>
+        <button class="mini-btn" id="createCollectionButton" type="button">Nova coleção</button>
+      </div>
+      <div class="collections-list" id="collectionsList"></div>
+    </section>
+
+    <section class="painel">
+      <div class="painel-header">
+        <h2>Álbuns favoritos</h2>
+        <button class="mini-btn danger" id="clearAlbumFavoritesButton" type="button">Limpar</button>
+      </div>
+      <div class="favoritos-grid" id="albumFavoritesGrid"></div>
+    </section>
+
+    <section class="painel">
+      <div class="painel-header">
+        <h2>Bandas favoritas</h2>
+        <button class="mini-btn danger" id="clearBandFavoritesPageButton" type="button">Limpar</button>
+      </div>
+      <div class="favoritos-grid" id="bandFavoritesGrid"></div>
+    </section>
+  </main>
+
+  <script src="/assets/js/core/preview-player.js"></script>
+  <script src="/assets/js/modules/storage.js"></script>
+  <script src="/assets/js/modules/links.js"></script>
+  <script src="/assets/js/pages/favoritos.js"></script>
+  <script src="/assets/js/core/pwa.js"></script>
 </body>
 </html>

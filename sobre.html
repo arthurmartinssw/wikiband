@@ -3,12 +3,49 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Redirecionando | Wikiband</title>
-  <script>
-    window.location.replace('/?view=about');
-  </script>
+  <title>Sobre | Wikiband</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
-  <p>Redirecionando...</p>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Wikiband</h1>
+        <p>Descubra música, organize favoritos e explore artistas com contexto.</p>
+      </div>
+
+      <nav class="menu">
+        <a href="/index.html">Início</a>
+        <a href="/favoritos.html">Favoritos</a>
+        <a href="/sobre.html">Sobre a Wikiband</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="pagina-sobre">
+    <section class="painel sobre-box">
+      <h2>Sobre a Wikiband</h2>
+      <p>A Wikiband é uma ferramenta para buscar artistas, álbuns e músicas reais usando dados da API pública do iTunes.</p>
+      <p>Você pode filtrar resultados por gênero, país e década, salvar favoritos localmente e montar coleções personalizadas.</p>
+      <p>As informações e os favoritos ficam no seu navegador, sem necessidade de conta.</p>
+    </section>
+
+    <section class="painel sobre-box">
+      <h2>Como aproveitar melhor</h2>
+      <p>Use a busca por artista para descobrir discografias, ou a busca por música para encontrar faixas específicas com prévia.</p>
+      <p>Depois, salve os melhores resultados nos favoritos e use o rádio para ouvir uma sequência das prévias disponíveis.</p>
+
+      <div class="sobre-acoes">
+        <a href="/index.html" class="action-btn">Começar busca</a>
+        <a href="/favoritos.html" class="action-btn">Abrir favoritos</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="/assets/js/core/pwa.js"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
-const CACHE_NAME = "wikiband-shell-v2";
-const RUNTIME_CACHE = "wikiband-runtime-v2";
+const CACHE_NAME = "wikiband-shell-v3";
+const RUNTIME_CACHE = "wikiband-runtime-v3";
 
 const APP_SHELL = [
   "/",
@@ -28,9 +28,11 @@ const APP_SHELL = [
 ];
 
 function getOfflineFallbackForPath(pathname) {
-  if (pathname === "/favoritos") return "/favoritos.html";
-  if (pathname === "/banda") return "/banda.html";
-  if (pathname === "/sobre") return "/sobre.html";
+  const normalizedPath = pathname.endsWith("/") && pathname !== "/" ? pathname.slice(0, -1) : pathname;
+
+  if (normalizedPath === "/favoritos" || normalizedPath === "/favoritos.html") return "/favoritos.html";
+  if (normalizedPath === "/banda" || normalizedPath === "/banda.html") return "/banda.html";
+  if (normalizedPath === "/sobre" || normalizedPath === "/sobre.html") return "/sobre.html";
   return "/index.html";
 }
 
