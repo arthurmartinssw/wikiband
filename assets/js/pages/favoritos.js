@@ -16,7 +16,7 @@ const Storage = window.WikibandStorage;
 const Links = window.WikibandLinks;
 
 function abrirDetalhes(item) {
-  const detailUrl = Links?.buildDetailUrl(item) || "/?view=detail";
+  const detailUrl = Links?.buildDetailUrl(item) || "/banda";
   sessionStorage.setItem("bandaSelecionada", JSON.stringify(item));
   if (window.WikibandViewRouter?.openDetail) {
     window.WikibandViewRouter.openDetail(item);
@@ -392,16 +392,7 @@ createCollectionButton.addEventListener("click", () => {
   renderDashboard();
 });
 
-function refreshFavoritosPage() {
-  renderAlbumFavorites();
-  renderBandFavorites();
-  renderDashboard();
-  renderCollections();
-}
-
-refreshFavoritosPage();
-
-window.addEventListener("wikiband:view-change", (event) => {
-  if (event.detail?.view !== "favorites") return;
-  refreshFavoritosPage();
-});
+renderAlbumFavorites();
+renderBandFavorites();
+renderDashboard();
+renderCollections();

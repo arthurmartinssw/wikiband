@@ -58,7 +58,7 @@ function obterDecada(valor) {
 }
 
 function abrirDetalhes(item) {
-  const detailUrl = Links?.buildDetailUrl(item) || "/?view=detail";
+  const detailUrl = Links?.buildDetailUrl(item) || "/banda";
   sessionStorage.setItem("bandaSelecionada", JSON.stringify(item));
   if (window.WikibandViewRouter?.openDetail) {
     window.WikibandViewRouter.openDetail(item);
@@ -588,9 +588,6 @@ clearBandFavoritesButton.addEventListener("click", () => {
 
 window.addEventListener("popstate", () => {
   if (!Links) return;
-  if (window.WikibandViewRouter?.readViewFromUrl && window.WikibandViewRouter.readViewFromUrl() !== "home") {
-    return;
-  }
 
   const { term, type } = Links.readSearchStateFromUrl();
   searchType = type;
@@ -610,9 +607,6 @@ window.addEventListener("popstate", () => {
 
 function inicializarBuscaDaUrl() {
   if (!Links) return;
-  if (window.WikibandViewRouter?.readViewFromUrl && window.WikibandViewRouter.readViewFromUrl() !== "home") {
-    return;
-  }
 
   const { term, type } = Links.readSearchStateFromUrl();
 
@@ -631,10 +625,3 @@ renderBandFavorites();
 preencherFiltros([]);
 renderDiscovery([]);
 inicializarBuscaDaUrl();
-
-window.addEventListener("wikiband:view-change", (event) => {
-  if (event.detail?.view !== "home") return;
-  renderHistory();
-  renderFavorites();
-  renderBandFavorites();
-});

@@ -58,11 +58,6 @@
 
   function syncViewToUrl(view, { replace = false } = {}) {
     const params = new URLSearchParams(window.location.search);
-    const detailKeys = ["albumId", "trackId", "artistId", "artist", "album", "song", "type"];
-
-    if (view !== "detail") {
-      detailKeys.forEach((key) => params.delete(key));
-    }
 
     if (view === "home") {
       params.set("view", "home");
@@ -100,9 +95,6 @@
     const link = event.target.closest("a[data-nav-view]");
 
     if (!link) return;
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
-    }
 
     event.preventDefault();
     navigateToView(link.dataset.navView);

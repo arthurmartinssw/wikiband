@@ -60,8 +60,7 @@
     if (item?.album) params.set("album", item.album);
     if (item?.musica) params.set("song", item.musica);
 
-    params.set("view", "detail");
-    const relative = `/?${params.toString()}`;
+    const relative = `/banda?${params.toString()}`;
 
     if (!options.absolute) {
       return relative;

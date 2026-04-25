@@ -348,7 +348,7 @@ function renderSemSelecao() {
     <div class="detalhe-content">
       <h1>Nenhuma banda selecionada</h1>
       <p>Volte para a busca e escolha um resultado para ver os detalhes.</p>
-      <a href="/?view=home" class="voltar" data-nav-view="home">Voltar para a busca</a>
+      <a href="/" class="voltar">Voltar para a busca</a>
     </div>
   `;
 }
@@ -414,7 +414,7 @@ function renderDetalhes(bandaSelecionada) {
         <div class="participants-list" id="participantsList"></div>
       </section>
 
-      <a href="/?view=home" class="voltar" data-nav-view="home">Voltar para a busca</a>
+      <a href="/" class="voltar">Voltar para a busca</a>
     </div>
   `;
 
@@ -446,11 +446,7 @@ function renderDetalhes(bandaSelecionada) {
   renderParticipantes(bandaSelecionada);
 }
 
-async function carregarDetalheAtual() {
-  if (window.WikibandViewRouter?.readViewFromUrl && window.WikibandViewRouter.readViewFromUrl() !== "detail") {
-    return;
-  }
-
+(async () => {
   const bandaSelecionada = await carregarBandaSelecionada();
 
   if (!bandaSelecionada) {
@@ -461,13 +457,4 @@ async function carregarDetalheAtual() {
   sessionStorage.setItem("bandaSelecionada", JSON.stringify(bandaSelecionada));
   atualizarUrlCanonica(bandaSelecionada);
   renderDetalhes(bandaSelecionada);
-}
-
-if (!window.WikibandViewRouter?.readViewFromUrl || window.WikibandViewRouter.readViewFromUrl() === "detail") {
-  carregarDetalheAtual();
-}
-
-window.addEventListener("wikiband:view-change", (event) => {
-  if (event.detail?.view !== "detail") return;
-  carregarDetalheAtual();
-});
+})();
