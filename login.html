@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | Wikiband</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/style.css" />
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Wikiband</h1>
+        <p>Acesse sua conta para sincronizar favoritos e preparar integração com banco de dados.</p>
+      </div>
+
+      <nav class="menu">
+        <a href="/index.html">Início</a>
+        <a href="/favoritos.html">Favoritos</a>
+        <a href="/sobre.html">Sobre a Wikiband</a>
+        <a href="/login.html" aria-current="page">Login</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="login-page">
+    <section class="login-layout">
+      <article class="painel login-hero">
+        <p class="login-badge">Acesso</p>
+        <h2>Entrar na Wikiband</h2>
+        <p>
+          Tela para testes  Futura implementacao a banco de dados..   v1.0
+        </p>
+      </article>
+
+      <section class="painel login-card" aria-labelledby="loginTitle">
+        <div class="login-avatar" aria-hidden="true">
+          <svg viewBox="0 0 64 64" role="img" aria-label="Avatar de login">
+            <circle cx="32" cy="32" r="30" />
+            <circle cx="32" cy="24" r="11" />
+            <path d="M13 52c3-9 10-14 19-14s16 5 19 14" />
+          </svg>
+        </div>
+
+        <h2 id="loginTitle">Bem-vindo(a)</h2>
+        <p class="login-subtitle">Informe seu e-mail e senha para entrar.</p>
+
+        <form class="login-form" action="#" method="post">
+          <label class="login-field" for="loginEmail">
+            <span>E-mail</span>
+            <input id="loginEmail" type="email" name="email" placeholder="voce@exemplo.com" autocomplete="email" />
+          </label>
+
+          <label class="login-field" for="loginPassword">
+            <span>Senha</span>
+            <input id="loginPassword" type="password" name="password" placeholder="********" autocomplete="current-password" />
+          </label>
+
+          <div class="login-actions">
+            <button class="primary-btn" type="button">Entrar</button>
+            <button class="secondary-btn" type="button">Salvar senha</button>
+          </div>
+        </form>
+
+        <p class="login-note">Interface pronta para ligar com API + banco de dados depois.</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/assets/js/core/pwa.js"></script>
+</body>
+</html>

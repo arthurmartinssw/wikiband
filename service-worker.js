@@ -1,5 +1,5 @@
-const CACHE_NAME = "wikiband-shell-v3";
-const RUNTIME_CACHE = "wikiband-runtime-v3";
+const CACHE_NAME = "wikiband-shell-v4";
+const RUNTIME_CACHE = "wikiband-runtime-v4";
 
 const APP_SHELL = [
   "/",
@@ -7,6 +7,7 @@ const APP_SHELL = [
   "/favoritos.html",
   "/banda.html",
   "/sobre.html",
+  "/login.html",
   "/offline.html",
   "/site.webmanifest",
   "/assets/css/style.css",
@@ -33,6 +34,7 @@ function getOfflineFallbackForPath(pathname) {
   if (normalizedPath === "/favoritos" || normalizedPath === "/favoritos.html") return "/favoritos.html";
   if (normalizedPath === "/banda" || normalizedPath === "/banda.html") return "/banda.html";
   if (normalizedPath === "/sobre" || normalizedPath === "/sobre.html") return "/sobre.html";
+  if (normalizedPath === "/login" || normalizedPath === "/login.html") return "/login.html";
   return "/index.html";
 }
 
