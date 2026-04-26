@@ -4,8 +4,8 @@
   const BAND_FAVORITES_KEY = "wikiband_band_favorites";
   const PLAY_HISTORY_KEY = "wikiband_play_history";
   const COLLECTIONS_KEY = "wikiband_collections";
-  const USER_KEY_PREFIX = "wikiband_user_";
   const SESSION_KEY = "wikiband_session";
+  const API_BASE_STORAGE_KEY = "wikiband_api_base_url";
   const SCOPED_SEPARATOR = "__";
 
   function readList(key) {
@@ -40,9 +40,48 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
-  function getUserStorageKey(email) {
-    const normalizedEmail = normalizeEmail(email);
-    return `${USER_KEY_PREFIX}${encodeURIComponent(normalizedEmail)}`;
+  function normalizeBaseUrl(url) {
+    return String(url || "")
+      .trim()
+      .replace(/\/+$/, "");
+  }
+
+  function getApiBaseUrl() {
+    const configuredBaseUrl = normalizeBaseUrl(localStorage.getItem(API_BASE_STORAGE_KEY));
+    if (configuredBaseUrl) return configuredBaseUrl;
+
+    if (window.location?.protocol === "file:") {
+      return "http://localhost:3000/api";
+    }
+
+    return "/api";
+  }
+
+  function buildApiUrl(path) {
+    const normalizedPath = String(path || "").startsWith("/") ? String(path || "") : `/${path}`;
+    return `${getApiBaseUrl()}${normalizedPath}`;
+  }
+
+  async function postJson(path, payload) {
+    const response = await fetch(buildApiUrl(path), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload || {})
+    });
+
+    let body = null;
+    try {
+      body = await response.json();
+    } catch (erro) {
+      body = null;
+    }
+
+    return {
+      response,
+      body
+    };
   }
 
   function getStorageScopeId() {
@@ -76,29 +115,15 @@
     localStorage.removeItem(key);
   }
 
-  function bytesToHex(bytes) {
-    return Array.from(bytes)
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("");
-  }
-
-  async function hashPassword(password) {
-    const normalizedPassword = String(password || "");
-    if (!normalizedPassword) return null;
-
-    if (!window.crypto || !window.crypto.subtle || typeof TextEncoder === "undefined") {
-      return null;
-    }
-
-    const encoder = new TextEncoder();
-    const data = encoder.encode(normalizedPassword);
-    const digest = await window.crypto.subtle.digest("SHA-256", data);
-    return bytesToHex(new Uint8Array(digest));
-  }
-
   function saveCurrentSession(session) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    return session;
+    const normalizedSession = {
+      nome: String(session?.nome || "").trim(),
+      email: normalizeEmail(session?.email),
+      loggedAt: Number(session?.loggedAt) || Date.now()
+    };
+
+    localStorage.setItem(SESSION_KEY, JSON.stringify(normalizedSession));
+    return normalizedSession;
   }
 
   function getCurrentSession() {
@@ -141,42 +166,46 @@
       };
     }
 
-    const userKey = getUserStorageKey(normalizedEmail);
-    if (localStorage.getItem(userKey)) {
-      return {
-        ok: false,
-        code: "EMAIL_EXISTS",
-        message: "Este e-mail ja esta cadastrado."
-      };
-    }
-
-    const passwordHash = await hashPassword(normalizedPassword);
-    if (!passwordHash) {
+    if (normalizedPassword.length < 6) {
       return {
         ok: false,
         code: "VALIDATION_ERROR",
-        message: "Nao foi possivel proteger a senha neste navegador."
+        message: "Senha deve ter no minimo 6 caracteres."
       };
     }
 
-    const userRecord = {
-      nome: normalizedName,
-      email: normalizedEmail,
-      passwordHash,
-      createdAt: Date.now()
-    };
+    try {
+      const { response, body } = await postJson("/auth/register", {
+        nome: normalizedName,
+        email: normalizedEmail,
+        senha: normalizedPassword
+      });
 
-    localStorage.setItem(userKey, JSON.stringify(userRecord));
-
-    return {
-      ok: true,
-      code: "REGISTERED",
-      message: "Conta criada com sucesso.",
-      user: {
-        nome: userRecord.nome,
-        email: userRecord.email
+      if (!response.ok || !body?.ok) {
+        return {
+          ok: false,
+          code: body?.code || "REQUEST_ERROR",
+          message: body?.message || "Nao foi possivel criar a conta."
+        };
       }
-    };
+
+      return {
+        ok: true,
+        code: body.code || "REGISTERED",
+        message: body.message || "Conta criada com sucesso.",
+        user: {
+          nome: String(body.user?.nome || normalizedName),
+          email: normalizeEmail(body.user?.email || normalizedEmail)
+        }
+      };
+    } catch (erro) {
+      console.warn("Falha ao cadastrar usuario:", erro);
+      return {
+        ok: false,
+        code: "NETWORK_ERROR",
+        message: "Nao foi possivel conectar ao servidor de autenticacao."
+      };
+    }
   }
 
   async function authenticateUser({ email, senha } = {}) {
@@ -199,50 +228,42 @@
       };
     }
 
-    const userKey = getUserStorageKey(normalizedEmail);
-    const savedUser = readObject(userKey);
+    try {
+      const { response, body } = await postJson("/auth/login", {
+        email: normalizedEmail,
+        senha: normalizedPassword
+      });
 
-    if (!savedUser || !savedUser.passwordHash) {
+      if (!response.ok || !body?.ok) {
+        clearCurrentSession();
+        return {
+          ok: false,
+          code: body?.code || "INVALID_CREDENTIALS",
+          message: body?.message || "E-mail ou senha invalidos."
+        };
+      }
+
+      const session = saveCurrentSession({
+        nome: String(body.user?.nome || ""),
+        email: normalizeEmail(body.user?.email || normalizedEmail),
+        loggedAt: Date.now()
+      });
+
+      return {
+        ok: true,
+        code: body.code || "AUTHENTICATED",
+        message: body.message || "Login realizado com sucesso.",
+        user: session
+      };
+    } catch (erro) {
+      console.warn("Falha ao autenticar usuario:", erro);
       clearCurrentSession();
       return {
         ok: false,
-        code: "INVALID_CREDENTIALS",
-        message: "E-mail ou senha invalidos."
+        code: "NETWORK_ERROR",
+        message: "Nao foi possivel conectar ao servidor de autenticacao."
       };
     }
-
-    const passwordHash = await hashPassword(normalizedPassword);
-    if (!passwordHash) {
-      return {
-        ok: false,
-        code: "VALIDATION_ERROR",
-        message: "Nao foi possivel validar a senha neste navegador."
-      };
-    }
-
-    if (passwordHash !== savedUser.passwordHash) {
-      clearCurrentSession();
-      return {
-        ok: false,
-        code: "INVALID_CREDENTIALS",
-        message: "E-mail ou senha invalidos."
-      };
-    }
-
-    const session = {
-      nome: String(savedUser.nome || ""),
-      email: normalizedEmail,
-      loggedAt: Date.now()
-    };
-
-    saveCurrentSession(session);
-
-    return {
-      ok: true,
-      code: "AUTHENTICATED",
-      message: "Login realizado com sucesso.",
-      user: session
-    };
   }
 
   function parseYear(valor) {
