@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const config = require("./src/config");
 const authRoutes = require("./src/routes/auth");
+const itunesRoutes = require("./src/routes/itunes");
 
 const app = express();
 const ROOT_DIR = process.cwd();
@@ -19,6 +20,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/itunes", itunesRoutes);
 
 app.use(express.static(ROOT_DIR));
 

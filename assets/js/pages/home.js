@@ -34,6 +34,15 @@ let searchType = "album";
 const detalhePrecarregado = new Set();
 const DETAIL_PAGE_URL = "/banda.html";
 
+function buildApiUrl(path) {
+  if (Storage && typeof Storage.buildApiUrl === "function") {
+    return Storage.buildApiUrl(path);
+  }
+
+  const normalizedPath = String(path || "").startsWith("/") ? String(path || "") : `/${path}`;
+  return `/api${normalizedPath}`;
+}
+
 function preCarregarDetalhe(url = DETAIL_PAGE_URL) {
   const destino = String(url || DETAIL_PAGE_URL);
 
@@ -434,11 +443,14 @@ async function pesquisarBandas({ saveTerm = true, syncUrl = true, pushUrl = true
   bandsGrid.innerHTML = `<div class="loading">Buscando resultados musicais...</div>`;
 
   try {
-    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(
-      termo
-    )}&media=music&entity=${Results.ENTIDADES_BUSCA[searchType]}&limit=50`;
+    const params = new URLSearchParams({
+      term: termo,
+      media: "music",
+      entity: Results.ENTIDADES_BUSCA[searchType],
+      limit: "50"
+    });
 
-    const resposta = await fetch(url);
+    const resposta = await fetch(buildApiUrl(`/itunes/search?${params.toString()}`));
 
     if (!resposta.ok) {
       throw new Error("Falha na API do iTunes.");

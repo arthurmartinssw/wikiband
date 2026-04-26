@@ -4,6 +4,15 @@ const Storage = window.WikibandStorage;
 const Results = window.WikibandResults;
 const Links = window.WikibandLinks;
 
+function buildApiUrl(path) {
+  if (Storage && typeof Storage.buildApiUrl === "function") {
+    return Storage.buildApiUrl(path);
+  }
+
+  const normalizedPath = String(path || "").startsWith("/") ? String(path || "") : `/${path}`;
+  return `/api${normalizedPath}`;
+}
+
 function montarTextoCompartilhar(banda) {
   const foco = banda.musica
     ? `"${banda.musica}", de ${banda.nome}`
@@ -242,8 +251,8 @@ async function carregarFaixasAlbum(banda) {
   }
 }
 
-async function fetchItunes(url) {
-  const resposta = await fetch(url);
+async function fetchItunes(path) {
+  const resposta = await fetch(buildApiUrl(path));
 
   if (!resposta.ok) {
     throw new Error("Falha ao buscar dados no iTunes.");
@@ -275,7 +284,7 @@ async function carregarViaQueryParams() {
   try {
     if (query.trackId) {
       const dados = await fetchItunes(
-        `https://itunes.apple.com/lookup?id=${encodeURIComponent(query.trackId)}`
+        `/itunes/lookup?id=${encodeURIComponent(query.trackId)}`
       );
       const faixa = (dados.results || []).find((item) => item.wrapperType === "track") || dados.results?.[0];
       if (faixa) return mapRawItem(faixa, "song");
@@ -283,7 +292,7 @@ async function carregarViaQueryParams() {
 
     if (query.albumId) {
       const dados = await fetchItunes(
-        `https://itunes.apple.com/lookup?id=${encodeURIComponent(query.albumId)}&entity=song`
+        `/itunes/lookup?id=${encodeURIComponent(query.albumId)}&entity=song`
       );
       const album = (dados.results || []).find((item) => item.wrapperType === "collection") || dados.results?.[0];
       if (album) return mapRawItem(album, "album");
@@ -291,7 +300,7 @@ async function carregarViaQueryParams() {
 
     if (query.artistId && query.type === "artist") {
       const dados = await fetchItunes(
-        `https://itunes.apple.com/lookup?id=${encodeURIComponent(query.artistId)}`
+        `/itunes/lookup?id=${encodeURIComponent(query.artistId)}`
       );
       const artist = (dados.results || []).find((item) => item.wrapperType === "artist") || dados.results?.[0];
       if (artist) return mapRawItem(artist, "artist");
@@ -299,21 +308,21 @@ async function carregarViaQueryParams() {
 
     if (query.artist && query.song) {
       const dados = await fetchItunes(
-        `https://itunes.apple.com/search?term=${encodeURIComponent(`${query.artist} ${query.song}`)}&media=music&entity=song&limit=1`
+        `/itunes/search?term=${encodeURIComponent(`${query.artist} ${query.song}`)}&media=music&entity=song&limit=1`
       );
       if (dados.results?.[0]) return mapRawItem(dados.results[0], "song");
     }
 
     if (query.artist && query.album) {
       const dados = await fetchItunes(
-        `https://itunes.apple.com/search?term=${encodeURIComponent(`${query.artist} ${query.album}`)}&media=music&entity=album&limit=1`
+        `/itunes/search?term=${encodeURIComponent(`${query.artist} ${query.album}`)}&media=music&entity=album&limit=1`
       );
       if (dados.results?.[0]) return mapRawItem(dados.results[0], "album");
     }
 
     if (query.artist) {
       const dados = await fetchItunes(
-        `https://itunes.apple.com/search?term=${encodeURIComponent(query.artist)}&media=music&entity=musicArtist&limit=1`
+        `/itunes/search?term=${encodeURIComponent(query.artist)}&media=music&entity=musicArtist&limit=1`
       );
       if (dados.results?.[0]) return mapRawItem(dados.results[0], "artist");
     }

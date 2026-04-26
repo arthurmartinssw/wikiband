@@ -561,6 +561,7 @@
     addHistoryTerm,
     addItemToCollection,
     addPlayEvent,
+    buildApiUrl,
     buildItemKey,
     clearCurrentSession,
     clearAlbumFavorites,

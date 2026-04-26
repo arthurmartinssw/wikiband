@@ -1,4 +1,5 @@
 const WikiPreview = (() => {
+  const Storage = window.WikibandStorage;
   const PLACEHOLDER_IMAGEM = "https://via.placeholder.com/300x300?text=Sem+Imagem";
 
   const trackCache = new Map();
@@ -26,6 +27,15 @@ const WikiPreview = (() => {
 
   function melhorarImagem(url, tamanho = "300x300bb") {
     return url ? url.replace("100x100bb", tamanho) : PLACEHOLDER_IMAGEM;
+  }
+
+  function buildApiUrl(path) {
+    if (Storage && typeof Storage.buildApiUrl === "function") {
+      return Storage.buildApiUrl(path);
+    }
+
+    const normalizedPath = String(path || "").startsWith("/") ? String(path || "") : `/${path}`;
+    return `/api${normalizedPath}`;
   }
 
   function formatDuration(ms) {
@@ -259,10 +269,12 @@ const WikiPreview = (() => {
       return trackCache.get(album.albumId);
     }
 
-    const url = `https://itunes.apple.com/lookup?id=${encodeURIComponent(
-      album.albumId
-    )}&entity=song`;
-    const resposta = await fetch(url);
+    const params = new URLSearchParams({
+      id: String(album.albumId),
+      entity: "song"
+    });
+
+    const resposta = await fetch(buildApiUrl(`/itunes/lookup?${params.toString()}`));
 
     if (!resposta.ok) {
       throw new Error("Nao foi possivel buscar as faixas do album.");
