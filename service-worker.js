@@ -1,5 +1,5 @@
-const CACHE_NAME = "wikiband-shell-v8";
-const RUNTIME_CACHE = "wikiband-runtime-v8";
+const CACHE_NAME = "wikiband-shell-v9";
+const RUNTIME_CACHE = "wikiband-runtime-v9";
 
 const APP_SHELL = [
   "/",
@@ -74,6 +74,10 @@ self.addEventListener("fetch", (event) => {
 
   const requestUrl = new URL(event.request.url);
 
+  if (requestUrl.pathname.startsWith("/api/")) {
+    return;
+  }
+
   if (requestUrl.origin !== self.location.origin) {
     return;
   }
@@ -82,10 +86,12 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(event.request)
         .then((networkResponse) => {
-          const responseClone = networkResponse.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          if (networkResponse.ok) {
+            const responseClone = networkResponse.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
           return networkResponse;
         })
         .catch(async () => {
@@ -109,10 +115,12 @@ self.addEventListener("fetch", (event) => {
 
       return fetch(event.request)
         .then((networkResponse) => {
-          const responseClone = networkResponse.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          if (networkResponse.ok) {
+            const responseClone = networkResponse.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
           return networkResponse;
         })
         .catch(() => caches.match("/offline.html"));

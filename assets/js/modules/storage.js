@@ -46,9 +46,14 @@
       .replace(/\/+$/, "");
   }
 
+  function isLocalRuntime() {
+    const hostname = String(window.location?.hostname || "");
+    return window.location?.protocol === "file:" || hostname === "localhost" || hostname === "127.0.0.1";
+  }
+
   function getApiBaseUrl() {
     const configuredBaseUrl = normalizeBaseUrl(localStorage.getItem(API_BASE_STORAGE_KEY));
-    if (configuredBaseUrl) return configuredBaseUrl;
+    if (configuredBaseUrl && isLocalRuntime()) return configuredBaseUrl;
 
     if (window.location?.protocol === "file:") {
       return "http://localhost:3000/api";
