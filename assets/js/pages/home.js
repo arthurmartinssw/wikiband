@@ -33,6 +33,16 @@ let debounceTimer = null;
 let searchType = "album";
 const detalhePrecarregado = new Set();
 const DETAIL_PAGE_URL = "/banda.html";
+const BIBLIOTECA_INICIAL_TERMOS = {
+  album: ["rock", "pop", "mpb", "indie"],
+  song: ["top hits", "rock classics", "samba", "love songs"],
+  artist: ["rock", "pop", "jazz", "metal"]
+};
+const BIBLIOTECA_LIMITE_POR_TERMO = 18;
+const BIBLIOTECA_MAX_ITENS = 60;
+const bibliotecaInicialCache = new Map();
+let contextoResultados = "library";
+let requestCounter = 0;
 
 function buildApiUrl(path) {
   if (Storage && typeof Storage.buildApiUrl === "function") {
@@ -41,6 +51,61 @@ function buildApiUrl(path) {
 
   const normalizedPath = String(path || "").startsWith("/") ? String(path || "") : `/${path}`;
   return `/api${normalizedPath}`;
+}
+
+function criarChaveUnicaResultado(item, type) {
+  if (type === "song") {
+    return String(
+      item.trackId ||
+        `${item.artistId || item.artistName}-${item.trackName || ""}-${item.collectionId || item.collectionName || ""}`
+    );
+  }
+
+  if (type === "artist") {
+    return String(item.artistId || item.artistName || item.artistLinkUrl || "");
+  }
+
+  return String(
+    item.collectionId || `${item.artistId || item.artistName}-${item.collectionName || ""}-${item.releaseDate || ""}`
+  );
+}
+
+function combinarResultadosSemDuplicidade(listas, type, maxItens = BIBLIOTECA_MAX_ITENS) {
+  const vistos = new Set();
+  const combinados = [];
+
+  listas.forEach((lista) => {
+    lista.forEach((item) => {
+      const chave = criarChaveUnicaResultado(item, type);
+
+      if (!chave || vistos.has(chave)) {
+        return;
+      }
+
+      vistos.add(chave);
+      combinados.push(item);
+    });
+  });
+
+  return combinados.slice(0, maxItens);
+}
+
+async function buscarResultadosItunes({ termo, type, limit = 50 }) {
+  const params = new URLSearchParams({
+    term: String(termo || "").trim(),
+    media: "music",
+    entity: Results.ENTIDADES_BUSCA[type],
+    limit: String(limit)
+  });
+
+  const resposta = await fetch(buildApiUrl(`/itunes/search?${params.toString()}`));
+
+  if (!resposta.ok) {
+    throw new Error("Falha na API do iTunes.");
+  }
+
+  const dados = await resposta.json();
+  return dados.results || [];
 }
 
 function preCarregarDetalhe(url = DETAIL_PAGE_URL) {
@@ -401,12 +466,19 @@ function renderizarResultados(lista) {
   bandsGrid.innerHTML = "";
 
   if (!lista.length) {
+    if (contextoResultados === "library") {
+      bandsGrid.innerHTML = `<p class="vazio">A biblioteca inicial está vazia no momento.</p>`;
+      statusText.textContent = "Não foi possível montar a biblioteca inicial agora.";
+      return;
+    }
+
     bandsGrid.innerHTML = `<p class="vazio">Nenhum resultado encontrado.</p>`;
     statusText.textContent = "Nenhum resultado encontrado.";
     return;
   }
 
-  statusText.textContent = `${lista.length} ${Results.obterTipoTexto(searchType)} encontrado(s).`;
+  const prefixo = contextoResultados === "library" ? "Biblioteca inicial: " : "";
+  statusText.textContent = `${prefixo}${lista.length} ${Results.obterTipoTexto(searchType)} encontrado(s).`;
 
   lista.forEach((item) => {
     const card = Cards.criarResultadoCard(item, getCardContext());
@@ -423,6 +495,68 @@ function aplicarFiltrosERenderizar() {
   renderizarResultados(obterListaFiltrada());
 }
 
+async function carregarBibliotecaInicial() {
+  const requestId = ++requestCounter;
+  contextoResultados = "library";
+
+  const itensEmCache = bibliotecaInicialCache.get(searchType);
+  if (itensEmCache?.length) {
+    ultimoResultadoBruto = itensEmCache;
+    const baseFiltrada = obterBaseFiltrada();
+    preencherFiltros(baseFiltrada);
+    renderDiscovery(baseFiltrada);
+    aplicarFiltrosERenderizar();
+    return;
+  }
+
+  statusText.textContent = `Carregando biblioteca de ${Results.obterNomeModo(searchType).toLowerCase()}...`;
+  bandsGrid.innerHTML = `<div class="loading">Montando biblioteca inicial...</div>`;
+
+  try {
+    const termos = BIBLIOTECA_INICIAL_TERMOS[searchType] || BIBLIOTECA_INICIAL_TERMOS.album;
+    const respostas = await Promise.allSettled(
+      termos.map((termo) =>
+        buscarResultadosItunes({
+          termo,
+          type: searchType,
+          limit: BIBLIOTECA_LIMITE_POR_TERMO
+        })
+      )
+    );
+
+    if (requestId !== requestCounter) {
+      return;
+    }
+
+    const listasValidas = respostas
+      .filter((resultado) => resultado.status === "fulfilled")
+      .map((resultado) => resultado.value);
+
+    if (!listasValidas.length) {
+      throw new Error("Falha ao montar biblioteca inicial.");
+    }
+
+    ultimoResultadoBruto = combinarResultadosSemDuplicidade(listasValidas, searchType);
+    bibliotecaInicialCache.set(searchType, ultimoResultadoBruto);
+
+    const baseFiltrada = obterBaseFiltrada();
+    preencherFiltros(baseFiltrada);
+    renderDiscovery(baseFiltrada);
+    aplicarFiltrosERenderizar();
+  } catch (erro) {
+    if (requestId !== requestCounter) {
+      return;
+    }
+
+    console.error("Erro ao carregar biblioteca inicial:", erro);
+    ultimoResultadoBruto = [];
+    bandsGrid.innerHTML = `<p class="vazio">Não foi possível carregar a biblioteca inicial agora.</p>`;
+    statusText.textContent = "Erro ao carregar biblioteca inicial.";
+    preencherFiltros([]);
+    renderDiscovery([]);
+  }
+}
+
 async function pesquisarBandas({ saveTerm = true, syncUrl = true, pushUrl = true } = {}) {
   const termo = searchInput.value.trim();
 
@@ -431,34 +565,26 @@ async function pesquisarBandas({ saveTerm = true, syncUrl = true, pushUrl = true
   }
 
   if (!termo) {
-    statusText.textContent = "Digite algo para pesquisar.";
-    bandsGrid.innerHTML = "";
-    ultimoResultadoBruto = [];
-    preencherFiltros([]);
-    renderDiscovery([]);
+    await carregarBibliotecaInicial();
     return;
   }
 
+  const requestId = ++requestCounter;
+  contextoResultados = "search";
   statusText.textContent = "Pesquisando...";
   bandsGrid.innerHTML = `<div class="loading">Buscando resultados musicais...</div>`;
 
   try {
-    const params = new URLSearchParams({
-      term: termo,
-      media: "music",
-      entity: Results.ENTIDADES_BUSCA[searchType],
-      limit: "50"
+    ultimoResultadoBruto = await buscarResultadosItunes({
+      termo,
+      type: searchType,
+      limit: 50
     });
 
-    const resposta = await fetch(buildApiUrl(`/itunes/search?${params.toString()}`));
-
-    if (!resposta.ok) {
-      throw new Error("Falha na API do iTunes.");
+    if (requestId !== requestCounter) {
+      return;
     }
 
-    const dados = await resposta.json();
-
-    ultimoResultadoBruto = dados.results || [];
     const baseFiltrada = obterBaseFiltrada();
 
     preencherFiltros(baseFiltrada);
@@ -470,6 +596,10 @@ async function pesquisarBandas({ saveTerm = true, syncUrl = true, pushUrl = true
       renderHistory();
     }
   } catch (erro) {
+    if (requestId !== requestCounter) {
+      return;
+    }
+
     console.error("Erro ao buscar bandas:", erro);
     ultimoResultadoBruto = [];
     bandsGrid.innerHTML = `<p class="vazio">Não foi possível carregar os resultados agora.</p>`;
@@ -488,14 +618,10 @@ function pesquisarComDebounce() {
     if (termo.length >= 2) {
       pesquisarBandas({ saveTerm: false, syncUrl: true, pushUrl: false });
     } else if (termo.length === 0) {
-      statusText.textContent = "Pesquise algo para começar.";
-      bandsGrid.innerHTML = "";
-      ultimoResultadoBruto = [];
-      preencherFiltros([]);
-      renderDiscovery([]);
       if (Links) {
         Links.syncSearchStateToUrl({ term: "", type: searchType }, true);
       }
+      carregarBibliotecaInicial();
     }
   }, 700);
 }
@@ -559,8 +685,11 @@ modeButtons.forEach((button) => {
 
     if (searchInput.value.trim().length >= 2) {
       pesquisarBandas({ saveTerm: false, syncUrl: true, pushUrl: false });
-    } else if (Links) {
-      Links.syncSearchStateToUrl({ term: "", type: searchType }, true);
+    } else {
+      if (Links) {
+        Links.syncSearchStateToUrl({ term: "", type: searchType }, true);
+      }
+      carregarBibliotecaInicial();
     }
   });
 });
@@ -643,28 +772,27 @@ window.addEventListener("popstate", () => {
   if (term.length >= 2) {
     pesquisarBandas({ saveTerm: false, syncUrl: false });
   } else {
-    bandsGrid.innerHTML = "";
-    statusText.textContent = "Pesquise algo para começar.";
-    ultimoResultadoBruto = [];
-    preencherFiltros([]);
-    renderDiscovery([]);
+    carregarBibliotecaInicial();
   }
 });
 
 function inicializarBuscaDaUrl() {
-  if (!Links) return;
+  if (Links) {
+    const { term, type } = Links.readSearchStateFromUrl();
+    searchType = type;
+    searchInput.value = term;
+  }
 
-  const { term, type } = Links.readSearchStateFromUrl();
-
-  if (!term) return;
-
-  searchType = type;
-  searchInput.value = term;
   atualizarModoBusca();
-  pesquisarBandas({ saveTerm: false, syncUrl: false });
+
+  if (searchInput.value.trim().length >= 2) {
+    pesquisarBandas({ saveTerm: false, syncUrl: false });
+    return;
+  }
+
+  carregarBibliotecaInicial();
 }
 
-atualizarModoBusca();
 renderHistory();
 renderFavorites();
 renderBandFavorites();
