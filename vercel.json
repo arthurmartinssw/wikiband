@@ -25,7 +25,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://reasoning-snapshot-holder-tactics.trycloudflare.com/api/:path*"
+      "destination": "https://pixels-perspectives-scales-assumption.trycloudflare.com/api/:path*"
     }
   ]
 }
