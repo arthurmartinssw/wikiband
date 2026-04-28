@@ -24,8 +24,24 @@
   ],
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://pixels-perspectives-scales-assumption.trycloudflare.com/api/:path*"
+      "source": "/api/health",
+      "destination": "/api/proxy?path=health"
+    },
+    {
+      "source": "/api/auth/login",
+      "destination": "/api/proxy?path=auth/login"
+    },
+    {
+      "source": "/api/auth/register",
+      "destination": "/api/proxy?path=auth/register"
+    },
+    {
+      "source": "/api/itunes/search",
+      "destination": "/api/proxy?path=itunes/search"
+    },
+    {
+      "source": "/api/itunes/lookup",
+      "destination": "/api/proxy?path=itunes/lookup"
     }
   ]
 }

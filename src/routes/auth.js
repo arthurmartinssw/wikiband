@@ -1,11 +1,13 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
-const { query } = require("../db/firebird");
+const config = require("../config");
+const { query } = require("../db");
 
 const router = express.Router();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DUPLICATE_KEY_GDS_CODE = 335544665;
+const isPostgres = config.db.client === "postgres";
 
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
@@ -34,6 +36,7 @@ function mapUser(userRow) {
 
 function isDuplicateEmailError(error) {
   return (
+    error?.code === "23505" ||
     Number(error?.gdscode) === DUPLICATE_KEY_GDS_CODE ||
     /unique|violation of primary or unique key|duplic/i.test(String(error?.message || ""))
   );
@@ -41,16 +44,28 @@ function isDuplicateEmailError(error) {
 
 function isDatabaseConnectionError(error) {
   return (
+    ["28P01", "3D000", "ECONNREFUSED", "ENOTFOUND", "ETIMEDOUT"].includes(String(error?.code || "")) ||
     Number(error?.gdscode) === 335545106 ||
-    /error occurred during login|connection rejected|connection shutdown|unable to complete network request/i.test(
+    /error occurred during login|connection rejected|connection shutdown|unable to complete network request|password authentication failed|database .* does not exist|timeout/i.test(
       String(error?.message || "")
     )
   );
 }
 
 async function findUserByEmail(email) {
-  const rows = await query(
+  const sql = isPostgres
+    ? `
+      SELECT
+        ID,
+        NOME,
+        EMAIL,
+        SENHA_HASH,
+        CRIADO_EM
+      FROM USUARIOS
+      WHERE EMAIL = $1
+      LIMIT 1
     `
+    : `
       SELECT FIRST 1
         ID,
         NOME,
@@ -59,11 +74,28 @@ async function findUserByEmail(email) {
         CRIADO_EM
       FROM USUARIOS
       WHERE EMAIL = ?
-    `,
+    `;
+
+  const rows = await query(
+    sql,
     [email]
   );
 
   return rows[0] || null;
+}
+
+async function createUser(nome, email, senhaHash) {
+  const sql = isPostgres
+    ? `
+      INSERT INTO USUARIOS (NOME, EMAIL, SENHA_HASH)
+      VALUES ($1, $2, $3)
+    `
+    : `
+      INSERT INTO USUARIOS (NOME, EMAIL, SENHA_HASH)
+      VALUES (?, ?, ?)
+    `;
+
+  await query(sql, [nome, email, senhaHash]);
 }
 
 router.post("/register", async (req, res) => {
@@ -112,13 +144,7 @@ router.post("/register", async (req, res) => {
 
     const senhaHash = await bcrypt.hash(senha, 12);
 
-    await query(
-      `
-        INSERT INTO USUARIOS (NOME, EMAIL, SENHA_HASH)
-        VALUES (?, ?, ?)
-      `,
-      [nome, email, senhaHash]
-    );
+    await createUser(nome, email, senhaHash);
 
     const createdUser = await findUserByEmail(email);
 

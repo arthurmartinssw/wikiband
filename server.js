@@ -22,7 +22,16 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/itunes", itunesRoutes);
 
-app.use(express.static(ROOT_DIR));
+const staticFiles = express.static(ROOT_DIR);
+
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/")) {
+    next();
+    return;
+  }
+
+  staticFiles(req, res, next);
+});
 
 app.use((req, res, next) => {
   if (req.method !== "GET" || req.path.startsWith("/api/")) {

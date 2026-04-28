@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: wikiband-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DB_CLIENT
+        value: postgres
+      - key: DB_SSL
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
