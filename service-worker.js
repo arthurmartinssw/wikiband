@@ -1,5 +1,5 @@
-const CACHE_NAME = "wikiband-shell-v9";
-const RUNTIME_CACHE = "wikiband-runtime-v9";
+const CACHE_NAME = "wikiband-shell-v10";
+const RUNTIME_CACHE = "wikiband-runtime-v10";
 
 const APP_SHELL = [
   "/",
@@ -41,6 +41,17 @@ function getOfflineFallbackForPath(pathname) {
   if (normalizedPath === "/login" || normalizedPath === "/login.html") return "/login.html";
   if (normalizedPath === "/cadastro" || normalizedPath === "/cadastro.html") return "/cadastro.html";
   return "/index.html";
+}
+
+function shouldFetchFresh(request) {
+  return ["style", "script", "worker", "manifest"].includes(request.destination);
+}
+
+async function putInCache(cacheName, request, response) {
+  if (!response || !response.ok) return;
+
+  const cache = await caches.open(cacheName);
+  await cache.put(request, response.clone());
 }
 
 self.addEventListener("install", (event) => {
@@ -110,20 +121,34 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
+    caches.match(event.request).then(async (cached) => {
+      if (shouldFetchFresh(event.request)) {
+        try {
+          const networkResponse = await fetch(event.request);
+          event.waitUntil(putInCache(RUNTIME_CACHE, event.request, networkResponse));
+          return networkResponse;
+        } catch (error) {
+          return cached || caches.match("/offline.html");
+        }
+      }
+
+      if (cached) {
+        event.waitUntil(
+          fetch(event.request)
+            .then((networkResponse) => putInCache(RUNTIME_CACHE, event.request, networkResponse))
+            .catch(() => {})
+        );
+        return cached;
+      }
 
       return fetch(event.request)
         .then((networkResponse) => {
           if (networkResponse.ok) {
-            const responseClone = networkResponse.clone();
-            caches.open(RUNTIME_CACHE).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
+            event.waitUntil(putInCache(RUNTIME_CACHE, event.request, networkResponse));
           }
           return networkResponse;
         })
-        .catch(() => caches.match("/offline.html"));
+        .catch(() => cached || caches.match("/offline.html"));
     })
   );
 });
