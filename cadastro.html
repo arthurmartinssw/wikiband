@@ -44,6 +44,22 @@
           />
         </label>
 
+        <label class="auth-field" for="signupUsername">
+          <span>Nome de usuario</span>
+          <input
+            id="signupUsername"
+            type="text"
+            name="username"
+            placeholder="arthurmartinssw"
+            autocomplete="username"
+            minlength="3"
+            maxlength="24"
+            pattern="[a-z0-9_]{3,24}"
+            required
+          />
+          <small>Use letras minusculas, numeros e underline.</small>
+        </label>
+
         <label class="auth-field" for="signupEmail">
           <span>E-mail</span>
           <input
@@ -66,6 +82,7 @@
             autocomplete="new-password"
             required
           />
+          <small>Minimo 8 caracteres, uma maiuscula e um numero.</small>
         </label>
 
         <label class="auth-field" for="signupConfirmPassword">

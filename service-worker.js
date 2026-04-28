@@ -1,5 +1,5 @@
-const CACHE_NAME = "wikiband-shell-v10";
-const RUNTIME_CACHE = "wikiband-runtime-v10";
+const CACHE_NAME = "wikiband-shell-v11";
+const RUNTIME_CACHE = "wikiband-runtime-v11";
 
 const APP_SHELL = [
   "/",
@@ -9,6 +9,7 @@ const APP_SHELL = [
   "/sobre.html",
   "/login.html",
   "/cadastro.html",
+  "/perfil.html",
   "/offline.html",
   "/site.webmanifest",
   "/assets/css/style.css",
@@ -27,6 +28,7 @@ const APP_SHELL = [
   "/assets/js/pages/banda.js",
   "/assets/js/pages/login.js",
   "/assets/js/pages/cadastro.js",
+  "/assets/js/pages/perfil.js",
   "/assets/icons/favicon-16x16.png",
   "/assets/icons/favicon-32x32.png",
   "/assets/icons/apple-touch-icon.png"
@@ -40,6 +42,7 @@ function getOfflineFallbackForPath(pathname) {
   if (normalizedPath === "/sobre" || normalizedPath === "/sobre.html") return "/sobre.html";
   if (normalizedPath === "/login" || normalizedPath === "/login.html") return "/login.html";
   if (normalizedPath === "/cadastro" || normalizedPath === "/cadastro.html") return "/cadastro.html";
+  if (normalizedPath === "/perfil" || normalizedPath === "/perfil.html") return "/perfil.html";
   return "/index.html";
 }
 

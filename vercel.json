@@ -20,6 +20,11 @@
       "source": "/sobre.html",
       "destination": "/sobre",
       "permanent": true
+    },
+    {
+      "source": "/perfil.html",
+      "destination": "/perfil",
+      "permanent": true
     }
   ],
   "rewrites": [
@@ -34,6 +39,10 @@
     {
       "source": "/api/auth/register",
       "destination": "/api/proxy?path=auth/register"
+    },
+    {
+      "source": "/api/auth/profile",
+      "destination": "/api/proxy?path=auth/profile"
     },
     {
       "source": "/api/itunes/search",

@@ -5,8 +5,11 @@
   const PLAY_HISTORY_KEY = "wikiband_play_history";
   const COLLECTIONS_KEY = "wikiband_collections";
   const SESSION_KEY = "wikiband_session";
+  const WELCOME_KEY = "wikiband_welcome_pending";
+  const AVATAR_KEY = "wikiband_avatar";
   const API_BASE_STORAGE_KEY = "wikiband_api_base_url";
   const SCOPED_SEPARATOR = "__";
+  const USERNAME_REGEX = /^[a-z0-9_]{3,24}$/;
 
   function readList(key) {
     try {
@@ -36,8 +39,27 @@
     return String(email || "").trim().toLowerCase();
   }
 
+  function normalizeUsername(username) {
+    return String(username || "").trim().toLowerCase();
+  }
+
   function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  function validatePassword(password) {
+    if (password.length < 8) return "Senha deve ter pelo menos 8 caracteres.";
+    if (!/[A-Z]/.test(password)) return "Senha deve ter pelo menos uma letra maiuscula.";
+    if (!/\d/.test(password)) return "Senha deve ter pelo menos um numero.";
+    return "";
+  }
+
+  function validateUsername(username) {
+    if (!USERNAME_REGEX.test(username)) {
+      return "Use 3 a 24 caracteres: letras minusculas, numeros e underline.";
+    }
+
+    return "";
   }
 
   function normalizeBaseUrl(url) {
@@ -67,13 +89,23 @@
     return `${getApiBaseUrl()}${normalizedPath}`;
   }
 
-  async function postJson(path, payload) {
+  async function requestJson(path, { method = "GET", payload, token } = {}) {
+    const headers = {
+      "Accept": "application/json"
+    };
+
+    if (typeof payload !== "undefined") {
+      headers["Content-Type"] = "application/json";
+    }
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const response = await fetch(buildApiUrl(path), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload || {})
+      method,
+      headers,
+      body: typeof payload === "undefined" ? undefined : JSON.stringify(payload || {})
     });
 
     let body = null;
@@ -89,6 +121,14 @@
     };
   }
 
+  async function postJson(path, payload, options = {}) {
+    return requestJson(path, {
+      method: "POST",
+      payload,
+      token: options.token
+    });
+  }
+
   function getStorageScopeId() {
     const session = getCurrentSession();
     if (!session?.email) return null;
@@ -99,6 +139,12 @@
     const scopeId = getStorageScopeId();
     if (!scopeId) return null;
     return `${baseKey}${SCOPED_SEPARATOR}${scopeId}`;
+  }
+
+  function getScopedAvatarKey() {
+    const scopeId = getStorageScopeId();
+    if (!scopeId) return null;
+    return `${AVATAR_KEY}${SCOPED_SEPARATOR}${scopeId}`;
   }
 
   function readScopedList(baseKey) {
@@ -123,12 +169,25 @@
   function saveCurrentSession(session) {
     const normalizedSession = {
       nome: String(session?.nome || "").trim(),
+      username: normalizeUsername(session?.username),
       email: normalizeEmail(session?.email),
+      token: String(session?.token || ""),
       loggedAt: Number(session?.loggedAt) || Date.now()
     };
 
     localStorage.setItem(SESSION_KEY, JSON.stringify(normalizedSession));
     return normalizedSession;
+  }
+
+  function updateCurrentSession(updates = {}) {
+    const currentSession = getCurrentSession();
+    if (!currentSession) return null;
+
+    return saveCurrentSession({
+      ...currentSession,
+      ...updates,
+      loggedAt: currentSession.loggedAt || Date.now()
+    });
   }
 
   function getCurrentSession() {
@@ -141,7 +200,9 @@
 
     return {
       nome: String(session.nome),
+      username: normalizeUsername(session.username),
       email: normalizeEmail(session.email),
+      token: String(session.token || ""),
       loggedAt
     };
   }
@@ -150,16 +211,73 @@
     localStorage.removeItem(SESSION_KEY);
   }
 
-  async function registerUser({ nome, email, senha } = {}) {
+  function setWelcomePending() {
+    localStorage.setItem(WELCOME_KEY, "1");
+  }
+
+  function consumeWelcomePending() {
+    const isPending = localStorage.getItem(WELCOME_KEY) === "1";
+    if (isPending) {
+      localStorage.removeItem(WELCOME_KEY);
+    }
+    return isPending;
+  }
+
+  function getCurrentAvatar() {
+    const key = getScopedAvatarKey();
+    if (!key) return "";
+    return String(localStorage.getItem(key) || "");
+  }
+
+  function saveCurrentAvatar(dataUrl) {
+    const key = getScopedAvatarKey();
+    if (!key) return "";
+
+    const normalizedDataUrl = String(dataUrl || "");
+
+    if (!normalizedDataUrl) {
+      localStorage.removeItem(key);
+      return "";
+    }
+
+    localStorage.setItem(key, normalizedDataUrl);
+    return normalizedDataUrl;
+  }
+
+  function getUserInitials(user = getCurrentSession()) {
+    const name = String(user?.nome || "").trim();
+    const username = String(user?.username || "").trim();
+    const source = name || username || String(user?.email || "");
+    const parts = source.split(/\s+/).filter(Boolean);
+
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+
+    return source.slice(0, 2).toUpperCase() || "WB";
+  }
+
+  async function registerUser({ nome, username, email, senha } = {}) {
     const normalizedName = String(nome || "").trim();
+    const normalizedUsername = normalizeUsername(username);
     const normalizedEmail = normalizeEmail(email);
     const normalizedPassword = String(senha || "");
 
-    if (!normalizedName || !normalizedEmail || !normalizedPassword) {
+    if (!normalizedName || !normalizedUsername || !normalizedEmail || !normalizedPassword) {
       return {
         ok: false,
         code: "VALIDATION_ERROR",
-        message: "Preencha nome, e-mail e senha."
+        message: "Preencha nome, nome de usuario, e-mail e senha."
+      };
+    }
+
+    const usernameError = validateUsername(normalizedUsername);
+
+    if (usernameError) {
+      return {
+        ok: false,
+        code: "VALIDATION_ERROR",
+        message: usernameError
       };
     }
 
@@ -171,17 +289,20 @@
       };
     }
 
-    if (normalizedPassword.length < 6) {
+    const passwordError = validatePassword(normalizedPassword);
+
+    if (passwordError) {
       return {
         ok: false,
         code: "VALIDATION_ERROR",
-        message: "Senha deve ter no minimo 6 caracteres."
+        message: passwordError
       };
     }
 
     try {
       const { response, body } = await postJson("/auth/register", {
         nome: normalizedName,
+        username: normalizedUsername,
         email: normalizedEmail,
         senha: normalizedPassword
       });
@@ -200,6 +321,7 @@
         message: body.message || "Conta criada com sucesso.",
         user: {
           nome: String(body.user?.nome || normalizedName),
+          username: normalizeUsername(body.user?.username || normalizedUsername),
           email: normalizeEmail(body.user?.email || normalizedEmail)
         }
       };
@@ -250,9 +372,13 @@
 
       const session = saveCurrentSession({
         nome: String(body.user?.nome || ""),
+        username: normalizeUsername(body.user?.username),
         email: normalizeEmail(body.user?.email || normalizedEmail),
+        token: String(body.token || ""),
         loggedAt: Date.now()
       });
+
+      setWelcomePending();
 
       return {
         ok: true,
@@ -263,6 +389,79 @@
     } catch (erro) {
       console.warn("Falha ao autenticar usuario:", erro);
       clearCurrentSession();
+      return {
+        ok: false,
+        code: "NETWORK_ERROR",
+        message: "Nao foi possivel conectar ao servidor de autenticacao."
+      };
+    }
+  }
+
+  async function updateUserProfile({ nome, username } = {}) {
+    const session = getCurrentSession();
+    const normalizedName = String(nome || "").trim();
+    const normalizedUsername = normalizeUsername(username);
+
+    if (!session?.token) {
+      return {
+        ok: false,
+        code: "UNAUTHORIZED",
+        message: "Entre novamente para atualizar o perfil."
+      };
+    }
+
+    if (!normalizedName || !normalizedUsername) {
+      return {
+        ok: false,
+        code: "VALIDATION_ERROR",
+        message: "Preencha nome e nome de usuario."
+      };
+    }
+
+    const usernameError = validateUsername(normalizedUsername);
+
+    if (usernameError) {
+      return {
+        ok: false,
+        code: "VALIDATION_ERROR",
+        message: usernameError
+      };
+    }
+
+    try {
+      const { response, body } = await postJson(
+        "/auth/profile",
+        {
+          nome: normalizedName,
+          username: normalizedUsername
+        },
+        { token: session.token }
+      );
+
+      if (!response.ok || !body?.ok) {
+        return {
+          ok: false,
+          code: body?.code || "REQUEST_ERROR",
+          message: body?.message || "Nao foi possivel atualizar o perfil."
+        };
+      }
+
+      const updatedSession = saveCurrentSession({
+        nome: String(body.user?.nome || normalizedName),
+        username: normalizeUsername(body.user?.username || normalizedUsername),
+        email: normalizeEmail(body.user?.email || session.email),
+        token: String(body.token || session.token),
+        loggedAt: session.loggedAt || Date.now()
+      });
+
+      return {
+        ok: true,
+        code: body.code || "PROFILE_UPDATED",
+        message: body.message || "Perfil atualizado com sucesso.",
+        user: updatedSession
+      };
+    } catch (erro) {
+      console.warn("Falha ao atualizar perfil:", erro);
       return {
         ok: false,
         code: "NETWORK_ERROR",
@@ -569,6 +768,7 @@
     buildApiUrl,
     buildItemKey,
     clearCurrentSession,
+    consumeWelcomePending,
     clearAlbumFavorites,
     clearBandFavorites,
     clearHistory,
@@ -579,16 +779,23 @@
     getAlbumFavorites,
     getBandFavorites,
     getCollections,
+    getCurrentAvatar,
     getCurrentSession,
     getDashboardData,
     getHistory,
     getPlayHistory,
+    getUserInitials,
     isAlbumFavorite,
     isBandFavorite,
     registerUser,
     removeItemFromCollection,
     renameCollection,
+    saveCurrentAvatar,
     toggleAlbumFavorite,
-    toggleBandFavorite
+    toggleBandFavorite,
+    updateCurrentSession,
+    updateUserProfile,
+    validatePassword,
+    validateUsername
   };
 })(window);

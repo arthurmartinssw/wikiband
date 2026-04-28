@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfil | Wikiband</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/style.css" />
+</head>
+
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1 class="brand-loop" aria-label="Wikiband: albums, music, artists, now.">
+          <span class="brand-fixed">Wikiband</span>
+          <span class="brand-cycle" aria-hidden="true">
+            <span>Albums.</span>
+            <span>Music.</span>
+            <span>Artists.</span>
+            <span>Now.</span>
+          </span>
+        </h1>
+        <p>Controle sua identidade na Wikiband.</p>
+      </div>
+
+      <nav class="menu" aria-label="Menu do usuario"></nav>
+    </div>
+  </header>
+
+  <main class="profile-page">
+    <section class="painel profile-card" aria-labelledby="profileTitle">
+      <div class="profile-hero">
+        <div class="profile-photo-preview" id="profilePhotoPreview" aria-hidden="true">WB</div>
+        <div>
+          <h2 id="profileTitle">Perfil</h2>
+          <p>Seu nome aparece nas boas-vindas. Seu nome de usuario identifica sua conta.</p>
+        </div>
+      </div>
+
+      <form id="profileForm" class="auth-form profile-form" action="#" method="post" novalidate>
+        <label class="auth-field" for="profilePhoto">
+          <span>Foto de perfil</span>
+          <input id="profilePhoto" type="file" accept="image/png,image/jpeg,image/webp" />
+          <small>A imagem fica salva apenas neste navegador.</small>
+        </label>
+
+        <label class="auth-field" for="profileName">
+          <span>Nome</span>
+          <input id="profileName" type="text" name="nome" autocomplete="name" required />
+        </label>
+
+        <label class="auth-field" for="profileUsername">
+          <span>Nome de usuario</span>
+          <input
+            id="profileUsername"
+            type="text"
+            name="username"
+            autocomplete="username"
+            minlength="3"
+            maxlength="24"
+            pattern="[a-z0-9_]{3,24}"
+            required
+          />
+          <small>Use letras minusculas, numeros e underline.</small>
+        </label>
+
+        <label class="auth-field" for="profileEmail">
+          <span>E-mail</span>
+          <input id="profileEmail" type="email" name="email" disabled />
+        </label>
+
+        <p id="profileStatus" class="auth-feedback" role="status" aria-live="polite"></p>
+
+        <div class="profile-actions">
+          <button id="profileSubmit" class="primary-btn" type="submit">Salvar perfil</button>
+          <button id="profileRemovePhoto" class="secondary-btn" type="button">Remover foto</button>
+        </div>
+      </form>
+    </section>
+
+    <aside class="painel profile-card">
+      <h2>Seu ritmo</h2>
+      <div class="profile-stats" id="profileStats"></div>
+    </aside>
+  </main>
+
+  <script src="/assets/js/modules/storage.js"></script>
+  <script src="/assets/js/modules/auth-ui.js"></script>
+  <script src="/assets/js/pages/perfil.js"></script>
+  <script src="/assets/js/core/pwa.js"></script>
+</body>
+
+</html>

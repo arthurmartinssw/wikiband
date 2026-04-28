@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,16 +11,17 @@
   <link rel="manifest" href="/site.webmanifest">
   <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
+
 <body>
   <header class="topo topo-menor auth-topo">
     <div class="topo-conteudo auth-topo-conteudo">
       <a href="/index.html" class="auth-brand brand-loop" aria-label="Wikiband: albums, music, artists, now.">
         <span class="brand-fixed">Wikiband</span>
         <span class="brand-cycle" aria-hidden="true">
-          <span>albums</span>
-          <span>music</span>
-          <span>artists</span>
-          <span>now</span>
+          <span>Albums.</span>
+          <span>Music.</span>
+          <span>Artists.</span>
+          <span>Now.</span>
         </span>
       </a>
       <p>Acesse sua conta para sincronizar seus favoritos.</p>
@@ -34,26 +36,14 @@
       <form id="loginForm" class="auth-form" action="#" method="post" novalidate>
         <label class="auth-field" for="loginEmail">
           <span>E-mail</span>
-          <input
-            id="loginEmail"
-            type="email"
-            name="email"
-            placeholder="voce@exemplo.com"
-            autocomplete="email"
-            required
-          />
+          <input id="loginEmail" type="email" name="email" placeholder="voce@exemplo.com" autocomplete="email"
+            required />
         </label>
 
         <label class="auth-field" for="loginPassword">
           <span>Senha</span>
-          <input
-            id="loginPassword"
-            type="password"
-            name="password"
-            placeholder="********"
-            autocomplete="current-password"
-            required
-          />
+          <input id="loginPassword" type="password" name="password" placeholder="********"
+            autocomplete="current-password" required />
         </label>
 
         <p id="loginStatus" class="auth-feedback" role="status" aria-live="polite"></p>
@@ -72,4 +62,5 @@
   <script src="/assets/js/pages/login.js"></script>
   <script src="/assets/js/core/pwa.js"></script>
 </body>
+
 </html>

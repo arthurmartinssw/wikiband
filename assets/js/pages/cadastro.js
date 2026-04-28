@@ -2,6 +2,7 @@
   const Storage = window.WikibandStorage;
   const form = document.getElementById("cadastroForm");
   const nomeInput = document.getElementById("signupName");
+  const usernameInput = document.getElementById("signupUsername");
   const emailInput = document.getElementById("signupEmail");
   const senhaInput = document.getElementById("signupPassword");
   const confirmarInput = document.getElementById("signupConfirmPassword");
@@ -11,6 +12,7 @@
   if (
     !form ||
     !nomeInput ||
+    !usernameInput ||
     !emailInput ||
     !senhaInput ||
     !confirmarInput ||
@@ -43,13 +45,30 @@
     event.preventDefault();
 
     const nome = nomeInput.value.trim();
+    const username = usernameInput.value.trim();
     const email = emailInput.value.trim();
     const senha = senhaInput.value;
     const confirmarSenha = confirmarInput.value;
 
-    if (!nome || !email || !senha || !confirmarSenha) {
+    if (!nome || !username || !email || !senha || !confirmarSenha) {
       setFeedback("Preencha todos os campos.", "error");
       return;
+    }
+
+    if (typeof Storage.validateUsername === "function") {
+      const usernameError = Storage.validateUsername(username.toLowerCase());
+      if (usernameError) {
+        setFeedback(usernameError, "error");
+        return;
+      }
+    }
+
+    if (typeof Storage.validatePassword === "function") {
+      const passwordError = Storage.validatePassword(senha);
+      if (passwordError) {
+        setFeedback(passwordError, "error");
+        return;
+      }
     }
 
     if (senha !== confirmarSenha) {
@@ -61,7 +80,7 @@
     setFeedback("Criando conta...", "success");
 
     try {
-      const result = await Storage.registerUser({ nome, email, senha });
+      const result = await Storage.registerUser({ nome, username, email, senha });
 
       if (!result.ok) {
         setFeedback(result.message || "Nao foi possivel criar a conta.", "error");

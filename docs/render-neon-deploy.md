@@ -15,6 +15,12 @@ Banco: Neon Free (Postgres)
 3. Cole e execute o conteudo de `docs/postgres-schema.sql`.
 4. Copie a connection string do banco. Ela comeca com `postgresql://`.
 
+Se a tabela `usuarios` ja existir sem `username`, execute tambem:
+
+```text
+docs/postgres-profile-migration.sql
+```
+
 ## 2. Subir a API no Render
 
 1. Acesse https://render.com.
@@ -35,6 +41,8 @@ Instance Type: Free
 DB_CLIENT=postgres
 DATABASE_URL=sua_connection_string_do_neon
 DB_SSL=true
+# Opcional, mas recomendado para manter sessoes assinadas estaveis:
+# SESSION_SECRET=uma_frase_longa_e_aleatoria
 ```
 
 O Render vai gerar uma URL parecida com:
