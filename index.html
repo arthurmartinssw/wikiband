@@ -75,6 +75,8 @@
   </section>
 
   <main class="container">
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Menu" title="Menu">☰</button>
+
     <section class="painel">
       <div class="painel-header">
         <h2>Resultados</h2>
@@ -85,6 +87,25 @@
       </div>
       <div class="bands-grid" id="bandsGrid"></div>
     </section>
+
+    <div id="footerNav" class="footer-nav" style="display: none;">
+      <div class="footer-nav-content">
+        <div class="footer-nav-section">
+          <h3>Wikiband</h3>
+          <div class="footer-nav-links">
+            <a href="/sobre.html">Sobre</a>
+            <a href="/sobre.html#contato">Contato</a>
+          </div>
+        </div>
+        <div class="footer-nav-section">
+          <h3>Legal</h3>
+          <div class="footer-nav-links">
+            <a href="/sobre.html#privacidade">Privacidade</a>
+            <a href="/sobre.html#termos">Termos de Uso</a>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <aside class="sidebar">
       <section class="painel">
@@ -148,6 +169,47 @@
   <script src="/assets/js/modules/music-assistant.js"></script>
   <script src="/assets/js/pages/home.js"></script>
   <script src="/assets/js/core/pwa.js"></script>
+  <script>
+    // Mobile sidebar toggle
+    const sidebarToggle = document.getElementById("sidebarToggle");
+    const sidebar = document.querySelector(".sidebar");
+
+    if (sidebarToggle && sidebar) {
+      sidebarToggle.addEventListener("click", () => {
+        sidebar.classList.toggle("is-open");
+      });
+
+      sidebar.addEventListener("click", (e) => {
+        if (e.target === sidebar) {
+          sidebar.classList.remove("is-open");
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        if (window.innerWidth > 900) {
+          sidebar.classList.remove("is-open");
+        }
+      });
+    }
+
+    // Show footer nav after scrolling
+    const footerNav = document.getElementById("footerNav");
+    const bandsGrid = document.getElementById("bandsGrid");
+    let footerShown = false;
+
+    if (footerNav && bandsGrid) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && bandsGrid.children.length >= 8 && !footerShown) {
+            footerNav.style.display = "block";
+            footerShown = true;
+          }
+        });
+      }, { threshold: 0.1 });
+
+      observer.observe(bandsGrid);
+    }
+  </script>
 </body>
 
 </html>
