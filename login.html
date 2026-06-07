@@ -37,13 +37,14 @@
         <label class="auth-field" for="loginEmail">
           <span>E-mail</span>
           <input id="loginEmail" type="email" name="email" placeholder="voce@exemplo.com" autocomplete="email"
+            maxlength="254"
             required />
         </label>
 
         <label class="auth-field" for="loginPassword">
           <span>Senha</span>
           <input id="loginPassword" type="password" name="password" placeholder="********"
-            autocomplete="current-password" required />
+            autocomplete="current-password" maxlength="128" required />
         </label>
 
         <p id="loginStatus" class="auth-feedback" role="status" aria-live="polite"></p>

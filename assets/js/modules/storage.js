@@ -1,4 +1,11 @@
 (function initWikibandStorage(window) {
+  const HTML_ESCAPE_MAP = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;"
+  };
   const HISTORY_KEY = "wikiband_history";
   const ALBUM_FAVORITES_KEY = "wikiband_favorites";
   const BAND_FAVORITES_KEY = "wikiband_band_favorites";
@@ -10,6 +17,59 @@
   const API_BASE_STORAGE_KEY = "wikiband_api_base_url";
   const SCOPED_SEPARATOR = "__";
   const USERNAME_REGEX = /^[a-z0-9_]{3,24}$/;
+  const NAME_MAX_LENGTH = 80;
+  const EMAIL_MAX_LENGTH = 254;
+  const PASSWORD_MAX_LENGTH = 128;
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, (char) => HTML_ESCAPE_MAP[char]);
+  }
+
+  function sanitizeUrl(value, { allowedProtocols = ["https:"], fallback = "" } = {}) {
+    const rawValue = String(value || "").trim();
+
+    if (!rawValue) {
+      return fallback;
+    }
+
+    try {
+      const url = new URL(rawValue, window.location.origin);
+
+      if (!allowedProtocols.includes(url.protocol)) {
+        return fallback;
+      }
+
+      return url.href;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function safeImageUrl(value, fallback = "https://via.placeholder.com/600x400?text=Sem+Imagem") {
+    const rawValue = String(value || "").trim();
+
+    if (rawValue.startsWith("data:") && !/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(rawValue)) {
+      return fallback;
+    }
+
+    return sanitizeUrl(value, {
+      allowedProtocols: ["https:", "data:"],
+      fallback
+    });
+  }
+
+  function safeExternalUrl(value, fallback = "#") {
+    return sanitizeUrl(value, {
+      allowedProtocols: ["https:"],
+      fallback
+    });
+  }
+
+  window.WikibandSafe = {
+    escapeHtml,
+    safeExternalUrl,
+    safeImageUrl
+  };
 
   function readList(key) {
     try {
@@ -44,11 +104,12 @@
   }
 
   function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    return email.length <= EMAIL_MAX_LENGTH && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
   function validatePassword(password) {
     if (password.length < 8) return "Senha deve ter pelo menos 8 caracteres.";
+    if (password.length > PASSWORD_MAX_LENGTH) return `Senha deve ter no maximo ${PASSWORD_MAX_LENGTH} caracteres.`;
     if (!/[A-Z]/.test(password)) return "Senha deve ter pelo menos uma letra maiuscula.";
     if (!/\d/.test(password)) return "Senha deve ter pelo menos um numero.";
     return "";
@@ -147,6 +208,10 @@
     return `${AVATAR_KEY}${SCOPED_SEPARATOR}${scopeId}`;
   }
 
+  function isSafeAvatarDataUrl(value) {
+    return /^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(String(value || ""));
+  }
+
   function readScopedList(baseKey) {
     const key = getScopedKey(baseKey);
     if (!key) return [];
@@ -226,7 +291,8 @@
   function getCurrentAvatar() {
     const key = getScopedAvatarKey();
     if (!key) return "";
-    return String(localStorage.getItem(key) || "");
+    const avatar = String(localStorage.getItem(key) || "");
+    return isSafeAvatarDataUrl(avatar) ? avatar : "";
   }
 
   function saveCurrentAvatar(dataUrl) {
@@ -236,6 +302,11 @@
     const normalizedDataUrl = String(dataUrl || "");
 
     if (!normalizedDataUrl) {
+      localStorage.removeItem(key);
+      return "";
+    }
+
+    if (!isSafeAvatarDataUrl(normalizedDataUrl)) {
       localStorage.removeItem(key);
       return "";
     }
@@ -268,6 +339,14 @@
         ok: false,
         code: "VALIDATION_ERROR",
         message: "Preencha nome, nome de usuario, e-mail e senha."
+      };
+    }
+
+    if (normalizedName.length > NAME_MAX_LENGTH) {
+      return {
+        ok: false,
+        code: "VALIDATION_ERROR",
+        message: `Nome deve ter no maximo ${NAME_MAX_LENGTH} caracteres.`
       };
     }
 
@@ -415,6 +494,14 @@
         ok: false,
         code: "VALIDATION_ERROR",
         message: "Preencha nome e nome de usuario."
+      };
+    }
+
+    if (normalizedName.length > NAME_MAX_LENGTH) {
+      return {
+        ok: false,
+        code: "VALIDATION_ERROR",
+        message: `Nome deve ter no maximo ${NAME_MAX_LENGTH} caracteres.`
       };
     }
 

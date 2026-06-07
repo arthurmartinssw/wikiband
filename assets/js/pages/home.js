@@ -27,6 +27,8 @@ const Cards = window.WikibandCards;
 const Sidebar = window.WikibandSidebar;
 const Share = window.WikibandShare;
 const Links = window.WikibandLinks;
+const Safe = window.WikibandSafe;
+const escapeHtml = Safe?.escapeHtml || ((value) => String(value ?? ""));
 
 let ultimoResultadoBruto = [];
 let debounceTimer = null;
@@ -269,7 +271,7 @@ function preencherFiltros(lista) {
 }
 
 function renderEmptyChipList(container, text) {
-  container.innerHTML = `<p class="vazio">${text}</p>`;
+  container.innerHTML = `<p class="vazio">${escapeHtml(text)}</p>`;
 }
 
 function createChip(label, onClick) {
@@ -371,7 +373,7 @@ async function tocarPreviewAlbum(album, card, previewBtn) {
       return;
     }
 
-    previewArea.innerHTML = `<p class="preview-status"><strong>Prévia:</strong> ${preview.nome}</p>`;
+    previewArea.innerHTML = `<p class="preview-status"><strong>Prévia:</strong> ${escapeHtml(preview.nome)}</p>`;
     previewBtn.disabled = false;
     WikiPreview.playTrack(preview, album, previewBtn);
   } catch (erro) {

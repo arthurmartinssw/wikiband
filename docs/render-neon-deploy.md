@@ -10,9 +10,9 @@ Banco: Neon Free (Postgres)
 
 ## 1. Criar o banco no Neon
 
-1. Acesse https://neon.com e crie um projeto.
-2. Abra o SQL Editor.
-3. Cole e execute o conteudo de `docs/postgres-schema.sql`.
+1. Acessar https://neon.com e criar um projeto.
+2. Abrir o SQL Editor.
+3. Colar e executar o conteudo de `docs/postgres-schema.sql`.
 4. Copie a connection string do banco. Ela comeca com `postgresql://`.
 
 Se a tabela `usuarios` ja existir sem `username`, execute tambem:
@@ -41,8 +41,9 @@ Instance Type: Free
 DB_CLIENT=postgres
 DATABASE_URL=sua_connection_string_do_neon
 DB_SSL=true
-# Opcional, mas recomendado para manter sessoes assinadas estaveis:
-# SESSION_SECRET=uma_frase_longa_e_aleatoria
+DB_SSL_REJECT_UNAUTHORIZED=true
+SESSION_SECRET=uma_frase_longa_e_aleatoria_com_32_chars_ou_mais
+CORS_ORIGINS=https://seu-projeto.vercel.app
 ```
 
 O Render vai gerar uma URL parecida com:
@@ -50,6 +51,9 @@ O Render vai gerar uma URL parecida com:
 ```text
 https://wikiband-api.onrender.com
 ```
+
+Sem `SESSION_SECRET` forte, a API nao deve subir em producao. Use um valor longo,
+aleatorio e diferente da senha/URL do banco.
 
 Teste:
 

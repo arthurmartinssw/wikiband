@@ -11,17 +11,46 @@ const HOP_BY_HOP_HEADERS = new Set([
   "upgrade"
 ]);
 
+const REQUEST_HEADERS_TO_FORWARD = new Set(["accept", "authorization", "content-type", "user-agent"]);
 const RESPONSE_HEADERS_TO_SKIP = new Set([
   "content-encoding",
   "content-length",
   "transfer-encoding"
 ]);
+const ALLOWED_PROXY_PATHS = new Set([
+  "health",
+  "auth/login",
+  "auth/register",
+  "auth/profile",
+  "itunes/search",
+  "itunes/lookup"
+]);
+const ALLOWED_METHODS_BY_PATH = {
+  "health": new Set(["GET", "HEAD"]),
+  "auth/login": new Set(["POST"]),
+  "auth/register": new Set(["POST"]),
+  "auth/profile": new Set(["POST"]),
+  "itunes/search": new Set(["GET", "HEAD"]),
+  "itunes/lookup": new Set(["GET", "HEAD"])
+};
+const MAX_PROXY_BODY_BYTES = 64 * 1024;
 
 function normalizeOrigin(origin) {
-  return String(origin || "")
-    .trim()
-    .replace(/\/+$/, "")
-    .replace(/\/api$/i, "");
+  const value = String(origin || "").trim();
+
+  if (!value) return "";
+
+  try {
+    const url = new URL(value.replace(/\/api\/?$/i, ""));
+
+    if (!["http:", "https:"].includes(url.protocol)) {
+      return "";
+    }
+
+    return `${url.protocol}//${url.host}`;
+  } catch (error) {
+    return "";
+  }
 }
 
 function getApiOrigin() {
@@ -31,8 +60,17 @@ function getApiOrigin() {
 function readRequestBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
+    let size = 0;
 
     req.on("data", (chunk) => {
+      size += chunk.length;
+
+      if (size > MAX_PROXY_BODY_BYTES) {
+        reject(new Error("PROXY_BODY_TOO_LARGE"));
+        req.destroy();
+        return;
+      }
+
       chunks.push(chunk);
     });
 
@@ -48,7 +86,13 @@ function copyRequestHeaders(req) {
   const headers = new Headers();
 
   Object.entries(req.headers || {}).forEach(([key, value]) => {
-    if (HOP_BY_HOP_HEADERS.has(key.toLowerCase()) || typeof value === "undefined") {
+    const lowerKey = key.toLowerCase();
+
+    if (
+      HOP_BY_HOP_HEADERS.has(lowerKey) ||
+      !REQUEST_HEADERS_TO_FORWARD.has(lowerKey) ||
+      typeof value === "undefined"
+    ) {
       return;
     }
 
@@ -60,7 +104,20 @@ function copyRequestHeaders(req) {
 
 function buildTargetUrl(req, apiOrigin) {
   const requestUrl = new URL(String(req.url || "/"), "https://wikiband.local");
-  const path = String(requestUrl.searchParams.get("path") || "").replace(/^\/+/, "");
+  const path = String(requestUrl.searchParams.get("path") || "")
+    .trim()
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "");
+
+  if (!ALLOWED_PROXY_PATHS.has(path)) {
+    return null;
+  }
+
+  const method = String(req.method || "GET").toUpperCase();
+
+  if (!ALLOWED_METHODS_BY_PATH[path]?.has(method)) {
+    return null;
+  }
 
   requestUrl.searchParams.delete("path");
 
@@ -81,6 +138,16 @@ module.exports = async function proxyApiRequest(req, res) {
 
   try {
     const targetUrl = buildTargetUrl(req, apiOrigin);
+
+    if (!targetUrl) {
+      res.status(404).json({
+        ok: false,
+        code: "API_PROXY_PATH_NOT_ALLOWED",
+        message: "Endpoint de API nao permitido pelo proxy."
+      });
+      return;
+    }
+
     const init = {
       method: req.method,
       headers: copyRequestHeaders(req),
@@ -103,6 +170,15 @@ module.exports = async function proxyApiRequest(req, res) {
     const body = Buffer.from(await upstreamResponse.arrayBuffer());
     res.end(body);
   } catch (error) {
+    if (error?.message === "PROXY_BODY_TOO_LARGE") {
+      res.status(413).json({
+        ok: false,
+        code: "PAYLOAD_TOO_LARGE",
+        message: "Corpo da requisicao muito grande."
+      });
+      return;
+    }
+
     console.error("Erro ao encaminhar requisicao da API:", error);
     res.status(502).json({
       ok: false,

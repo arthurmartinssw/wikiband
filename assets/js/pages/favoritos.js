@@ -14,6 +14,9 @@ const collectionsList = document.getElementById("collectionsList");
 
 const Storage = window.WikibandStorage;
 const Links = window.WikibandLinks;
+const Safe = window.WikibandSafe;
+const escapeHtml = Safe?.escapeHtml || ((value) => String(value ?? ""));
+const safeImageUrl = Safe?.safeImageUrl || ((value) => String(value || ""));
 
 function abrirDetalhes(item) {
   const detailUrl = Links?.buildDetailUrl(item) || "/banda.html";
@@ -90,12 +93,12 @@ function criarAlbumFavorito(album) {
   card.className = "favorite-card";
 
   card.innerHTML = `
-    <img src="${album.imagem}" alt="${album.album || album.nome}">
+    <img src="${safeImageUrl(album.imagem)}" alt="${escapeHtml(album.album || album.nome)}">
     <div class="favorite-card-body">
-      <h3>${album.album || album.nome}</h3>
-      <p>${album.nome}</p>
-      <span class="tag">${album.genero}</span>
-      <p><strong>Lançamento:</strong> ${album.lancamento}</p>
+      <h3>${escapeHtml(album.album || album.nome)}</h3>
+      <p>${escapeHtml(album.nome)}</p>
+      <span class="tag">${escapeHtml(album.genero)}</span>
+      <p><strong>Lançamento:</strong> ${escapeHtml(album.lancamento)}</p>
       <div class="favorite-card-actions">
         <button class="primary-btn preview-btn" type="button">Tocar prévia</button>
         <button class="secondary-btn details-btn" type="button">Ver detalhes</button>
@@ -143,12 +146,12 @@ function criarBandaFavorita(banda) {
   card.className = "favorite-card";
 
   card.innerHTML = `
-    <img src="${banda.imagem}" alt="${banda.nome}">
+    <img src="${safeImageUrl(banda.imagem)}" alt="${escapeHtml(banda.nome)}">
     <div class="favorite-card-body">
-      <h3>${banda.nome}</h3>
-      <span class="tag">${banda.genero}</span>
-      <p><strong>País:</strong> ${banda.pais}</p>
-      <p><strong>Referência salva:</strong> ${banda.album}</p>
+      <h3>${escapeHtml(banda.nome)}</h3>
+      <span class="tag">${escapeHtml(banda.genero)}</span>
+      <p><strong>País:</strong> ${escapeHtml(banda.pais)}</p>
+      <p><strong>Referência salva:</strong> ${escapeHtml(banda.album)}</p>
       <div class="favorite-card-actions">
         <button class="secondary-btn details-btn" type="button">Ver detalhes</button>
         <button class="secondary-btn collection-btn" type="button">Coleção</button>
@@ -212,7 +215,7 @@ function renderBandFavorites() {
 
 function renderInsightList(container, items, emptyText) {
   if (!items.length) {
-    container.innerHTML = `<p class="vazio">${emptyText}</p>`;
+    container.innerHTML = `<p class="vazio">${escapeHtml(emptyText)}</p>`;
     return;
   }
 
@@ -221,7 +224,7 @@ function renderInsightList(container, items, emptyText) {
   items.forEach((item) => {
     const row = document.createElement("div");
     row.className = "insight-row";
-    row.innerHTML = `<strong>${item.label}</strong><span>${item.total}</span>`;
+    row.innerHTML = `<strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.total)}</span>`;
     container.appendChild(row);
   });
 }
@@ -265,10 +268,10 @@ function createCollectionCard(collection) {
     ? collection.items
         .map(
           (saved) => `
-      <div class="collection-item" data-key="${saved.key}">
+      <div class="collection-item" data-key="${escapeHtml(saved.key)}">
         <div>
-          <strong>${saved.item.musica || saved.item.album || saved.item.nome}</strong>
-          <p>${saved.item.nome || "Artista"}</p>
+          <strong>${escapeHtml(saved.item.musica || saved.item.album || saved.item.nome)}</strong>
+          <p>${escapeHtml(saved.item.nome || "Artista")}</p>
         </div>
         <div class="collection-item-actions">
           <button class="mini-btn open-item" type="button">Abrir</button>
@@ -282,7 +285,7 @@ function createCollectionCard(collection) {
 
   card.innerHTML = `
     <div class="collection-header">
-      <h3>${collection.name}</h3>
+      <h3>${escapeHtml(collection.name)}</h3>
       <div class="painel-header-actions">
         <button class="mini-btn rename-collection" type="button">Renomear</button>
         <button class="mini-btn danger delete-collection" type="button">Excluir</button>

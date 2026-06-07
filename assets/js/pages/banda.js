@@ -3,6 +3,10 @@ const detalheContainer = document.getElementById("detalheContainer");
 const Storage = window.WikibandStorage;
 const Results = window.WikibandResults;
 const Links = window.WikibandLinks;
+const Safe = window.WikibandSafe;
+const escapeHtml = Safe?.escapeHtml || ((value) => String(value ?? ""));
+const safeExternalUrl = Safe?.safeExternalUrl || ((value) => String(value || "#"));
+const safeImageUrl = Safe?.safeImageUrl || ((value) => String(value || ""));
 
 function buildApiUrl(path) {
   if (Storage && typeof Storage.buildApiUrl === "function") {
@@ -120,7 +124,7 @@ async function tocarPrimeiraPreview(banda, previewBtn, previewArea) {
       return;
     }
 
-    previewArea.innerHTML = `<p class="preview-status"><strong>Prévia:</strong> ${preview.nome}</p>`;
+    previewArea.innerHTML = `<p class="preview-status"><strong>Prévia:</strong> ${escapeHtml(preview.nome)}</p>`;
     previewBtn.disabled = false;
     WikiPreview.playTrack(preview, banda, previewBtn);
   } catch (erro) {
@@ -183,12 +187,12 @@ function criarParticipanteCard(participante) {
     .toUpperCase();
 
   card.innerHTML = `
-    <div class="member-avatar">${iniciais}</div>
+    <div class="member-avatar">${escapeHtml(iniciais)}</div>
     <div class="member-info">
-      <h3>${participante.name}</h3>
-      <p><strong>${participante.role}</strong></p>
-      <p>${participante.bio}</p>
-      <a href="${participante.spotifyUrl}" target="_blank" rel="noopener noreferrer">Spotify</a>
+      <h3>${escapeHtml(participante.name)}</h3>
+      <p><strong>${escapeHtml(participante.role)}</strong></p>
+      <p>${escapeHtml(participante.bio)}</p>
+      <a href="${safeExternalUrl(participante.spotifyUrl)}" target="_blank" rel="noopener noreferrer">Spotify</a>
     </div>
   `;
 
@@ -377,13 +381,13 @@ function renderDetalhes(bandaSelecionada) {
   const previewDisponivel = Boolean(bandaSelecionada.previewUrl || bandaSelecionada.albumId);
 
   detalheContainer.innerHTML = `
-    <img src="${bandaSelecionada.imagem}" class="detalhe-imagem" alt="${bandaSelecionada.nome}">
+    <img src="${safeImageUrl(bandaSelecionada.imagem)}" class="detalhe-imagem" alt="${escapeHtml(bandaSelecionada.nome)}">
     <div class="detalhe-content">
-      <h1>${bandaSelecionada.nome}</h1>
-      <p><strong>Gênero:</strong> ${bandaSelecionada.genero}</p>
-      <p><strong>País:</strong> ${bandaSelecionada.pais}</p>
-      <p><strong>Álbum:</strong> ${bandaSelecionada.album}</p>
-      <p><strong>Lançamento:</strong> ${bandaSelecionada.lancamento}</p>
+      <h1>${escapeHtml(bandaSelecionada.nome)}</h1>
+      <p><strong>Gênero:</strong> ${escapeHtml(bandaSelecionada.genero)}</p>
+      <p><strong>País:</strong> ${escapeHtml(bandaSelecionada.pais)}</p>
+      <p><strong>Álbum:</strong> ${escapeHtml(bandaSelecionada.album)}</p>
+      <p><strong>Lançamento:</strong> ${escapeHtml(bandaSelecionada.lancamento)}</p>
 
       <div class="links-externos">
         <button class="link-externo" id="detailPreviewButton" type="button" ${previewDisponivel ? "" : "disabled"}>
@@ -395,10 +399,10 @@ function renderDetalhes(bandaSelecionada) {
         <button class="link-externo" id="shareDetailButton" type="button">
           Compartilhar
         </button>
-        <a class="link-externo" href="${bandaSelecionada.spotifyLink}" target="_blank" rel="noopener noreferrer">
+        <a class="link-externo" href="${safeExternalUrl(bandaSelecionada.spotifyLink)}" target="_blank" rel="noopener noreferrer">
           Spotify
         </a>
-        <a class="link-externo" href="${bandaSelecionada.youtubeLink}" target="_blank" rel="noopener noreferrer">
+        <a class="link-externo" href="${safeExternalUrl(bandaSelecionada.youtubeLink)}" target="_blank" rel="noopener noreferrer">
           YouTube
         </a>
       </div>
@@ -443,7 +447,7 @@ function renderDetalhes(bandaSelecionada) {
 
   addCollectionBtn.addEventListener("click", () => {
     adicionarEmColecao(bandaSelecionada, (mensagem) => {
-      previewArea.innerHTML = `<p class="preview-status">${mensagem}</p>`;
+      previewArea.innerHTML = `<p class="preview-status">${escapeHtml(mensagem)}</p>`;
     });
   });
 

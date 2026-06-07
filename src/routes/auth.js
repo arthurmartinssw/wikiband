@@ -4,14 +4,47 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const config = require("../config");
 const { query } = require("../db");
+const { createRateLimiter } = require("../middleware/rate-limit");
 
 const router = express.Router();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_REGEX = /^[a-z0-9_]{3,24}$/;
 const DUPLICATE_KEY_GDS_CODE = 335544665;
-const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30;
+const SESSION_MAX_AGE_MS = config.security.sessionMaxAgeMs;
+const NAME_MAX_LENGTH = 80;
+const EMAIL_MAX_LENGTH = 254;
+const PASSWORD_MAX_LENGTH = 128;
+const DNS_TIMEOUT_MS = 2500;
+const DUMMY_PASSWORD_HASH = "$2b$12$/nIg88jUTEMXHMr8jUt98ety0c94Tc25PXZmlb3gvpYqlUu/eL.kC";
 const isPostgres = config.db.client === "postgres";
+const authIpLimiter = createRateLimiter({
+  keyPrefix: "auth-ip",
+  windowMs: 15 * 60 * 1000,
+  max: 80,
+  message: "Muitas requisicoes de autenticacao. Aguarde alguns minutos e tente novamente."
+});
+const loginLimiter = createRateLimiter({
+  keyPrefix: "auth-login",
+  windowMs: 15 * 60 * 1000,
+  max: 8,
+  keyGenerator: (req) => `${req.ip}:${normalizeEmail(req.body?.email) || "unknown"}`,
+  message: "Muitas tentativas de login. Aguarde alguns minutos e tente novamente."
+});
+const registerLimiter = createRateLimiter({
+  keyPrefix: "auth-register",
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: "Muitas tentativas de cadastro. Aguarde um pouco e tente novamente."
+});
+const profileLimiter = createRateLimiter({
+  keyPrefix: "auth-profile",
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: "Muitas atualizacoes de perfil. Aguarde alguns minutos e tente novamente."
+});
+
+router.use(authIpLimiter);
 
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
@@ -22,7 +55,10 @@ function normalizeUsername(username) {
 }
 
 function sanitizeName(name) {
-  return String(name || "").trim();
+  return String(name || "")
+    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function sanitizePassword(password) {
@@ -44,12 +80,7 @@ function mapUser(userRow) {
 }
 
 function getSessionSecret() {
-  return (
-    process.env.SESSION_SECRET ||
-    process.env.DATABASE_URL ||
-    process.env.DB_PASSWORD ||
-    "wikiband-dev-session-secret"
-  );
+  return config.security.sessionSecret;
 }
 
 function toBase64Url(value) {
@@ -129,9 +160,29 @@ function readBearerToken(req) {
   return match ? match[1].trim() : "";
 }
 
+function validateName(name) {
+  if (name.length > NAME_MAX_LENGTH) {
+    return `Nome deve ter no maximo ${NAME_MAX_LENGTH} caracteres.`;
+  }
+
+  return "";
+}
+
+function validateEmail(email) {
+  if (email.length > EMAIL_MAX_LENGTH || !EMAIL_REGEX.test(email)) {
+    return "Informe um e-mail valido.";
+  }
+
+  return "";
+}
+
 function validatePassword(password) {
   if (password.length < 8) {
     return "Senha deve ter pelo menos 8 caracteres.";
+  }
+
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return `Senha deve ter no maximo ${PASSWORD_MAX_LENGTH} caracteres.`;
   }
 
   if (!/[A-Z]/.test(password)) {
@@ -153,13 +204,27 @@ function validateUsername(username) {
   return "";
 }
 
+function withTimeout(promise, timeoutMs) {
+  let timeout;
+
+  const timeoutPromise = new Promise((resolve, reject) => {
+    timeout = setTimeout(() => {
+      reject(new Error("DNS_TIMEOUT"));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeout);
+  });
+}
+
 async function hasDeliverableEmailDomain(email) {
   const domain = String(email).split("@")[1];
 
   if (!domain) return false;
 
   try {
-    const records = await dns.resolveMx(domain);
+    const records = await withTimeout(dns.resolveMx(domain), DNS_TIMEOUT_MS);
     if (records.some((record) => String(record.exchange || "").trim())) {
       return true;
     }
@@ -168,14 +233,14 @@ async function hasDeliverableEmailDomain(email) {
   }
 
   try {
-    const addresses = await dns.resolve4(domain);
+    const addresses = await withTimeout(dns.resolve4(domain), DNS_TIMEOUT_MS);
     if (addresses.length > 0) return true;
   } catch (error) {
     // Try IPv6 before rejecting.
   }
 
   try {
-    const addresses = await dns.resolve6(domain);
+    const addresses = await withTimeout(dns.resolve6(domain), DNS_TIMEOUT_MS);
     return addresses.length > 0;
   } catch (error) {
     return false;
@@ -302,7 +367,7 @@ async function updateUserProfile(email, nome, username) {
   await query(sql, [nome, username, email]);
 }
 
-router.post("/register", async (req, res) => {
+router.post("/register", registerLimiter, async (req, res) => {
   const nome = sanitizeName(req.body?.nome);
   const username = normalizeUsername(req.body?.username);
   const email = normalizeEmail(req.body?.email);
@@ -313,6 +378,17 @@ router.post("/register", async (req, res) => {
       ok: false,
       code: "VALIDATION_ERROR",
       message: "Preencha nome, nome de usuario, e-mail e senha."
+    });
+    return;
+  }
+
+  const nameError = validateName(nome);
+
+  if (nameError) {
+    res.status(400).json({
+      ok: false,
+      code: "VALIDATION_ERROR",
+      message: nameError
     });
     return;
   }
@@ -328,11 +404,13 @@ router.post("/register", async (req, res) => {
     return;
   }
 
-  if (!EMAIL_REGEX.test(email)) {
+  const emailError = validateEmail(email);
+
+  if (emailError) {
     res.status(400).json({
       ok: false,
       code: "VALIDATION_ERROR",
-      message: "Informe um e-mail valido."
+      message: emailError
     });
     return;
   }
@@ -431,7 +509,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => {
   const email = normalizeEmail(req.body?.email);
   const senha = sanitizePassword(req.body?.senha);
 
@@ -444,11 +522,22 @@ router.post("/login", async (req, res) => {
     return;
   }
 
-  if (!EMAIL_REGEX.test(email)) {
+  const emailError = validateEmail(email);
+
+  if (emailError) {
     res.status(400).json({
       ok: false,
       code: "VALIDATION_ERROR",
-      message: "Informe um e-mail valido."
+      message: emailError
+    });
+    return;
+  }
+
+  if (senha.length > PASSWORD_MAX_LENGTH) {
+    res.status(401).json({
+      ok: false,
+      code: "INVALID_CREDENTIALS",
+      message: "E-mail ou senha invalidos."
     });
     return;
   }
@@ -457,6 +546,7 @@ router.post("/login", async (req, res) => {
     const user = await findUserByEmail(email);
 
     if (!user) {
+      await bcrypt.compare(senha, DUMMY_PASSWORD_HASH);
       res.status(401).json({
         ok: false,
         code: "INVALID_CREDENTIALS",
@@ -502,7 +592,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.post("/profile", async (req, res) => {
+router.post("/profile", profileLimiter, async (req, res) => {
   const token = readBearerToken(req);
   const session = verifySessionToken(token);
   const nome = sanitizeName(req.body?.nome);
@@ -522,6 +612,17 @@ router.post("/profile", async (req, res) => {
       ok: false,
       code: "VALIDATION_ERROR",
       message: "Preencha nome e nome de usuario."
+    });
+    return;
+  }
+
+  const nameError = validateName(nome);
+
+  if (nameError) {
+    res.status(400).json({
+      ok: false,
+      code: "VALIDATION_ERROR",
+      message: nameError
     });
     return;
   }

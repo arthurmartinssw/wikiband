@@ -1,4 +1,5 @@
 const express = require("express");
+const { createRateLimiter } = require("../middleware/rate-limit");
 
 const router = express.Router();
 
@@ -6,6 +7,14 @@ const ITUNES_BASE_URL = "https://itunes.apple.com";
 const ALLOWED_MEDIA = new Set(["music"]);
 const ALLOWED_SEARCH_ENTITIES = new Set(["album", "song", "musicArtist"]);
 const ALLOWED_LOOKUP_ENTITIES = new Set(["song", "album", "musicArtist"]);
+const itunesLimiter = createRateLimiter({
+  keyPrefix: "itunes",
+  windowMs: 60 * 1000,
+  max: 90,
+  message: "Muitas buscas em pouco tempo. Aguarde alguns segundos e tente novamente."
+});
+
+router.use(itunesLimiter);
 
 function sanitizeText(value) {
   return String(value || "").trim();

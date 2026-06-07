@@ -1,16 +1,20 @@
 (function initWikibandCards(window) {
+  const Safe = window.WikibandSafe;
+  const escapeHtml = Safe?.escapeHtml || ((value) => String(value ?? ""));
+  const safeImageUrl = Safe?.safeImageUrl || ((value) => String(value || ""));
+
   function criarAlbumCard(album, context) {
     const card = document.createElement("div");
     card.className = "band-card";
 
     card.innerHTML = `
-      <img src="${album.imagem}" class="band-image" alt="${album.album}">
+      <img src="${safeImageUrl(album.imagem)}" class="band-image" alt="${escapeHtml(album.album)}">
       <div class="band-content">
-        <h3>${album.nome}</h3>
-        <span class="tag">${album.genero}</span>
-        <p><strong>País:</strong> ${album.pais}</p>
-        <p><strong>Álbum:</strong> ${album.album}</p>
-        <p><strong>Lançamento:</strong> ${album.lancamento}</p>
+        <h3>${escapeHtml(album.nome)}</h3>
+        <span class="tag">${escapeHtml(album.genero)}</span>
+        <p><strong>País:</strong> ${escapeHtml(album.pais)}</p>
+        <p><strong>Álbum:</strong> ${escapeHtml(album.album)}</p>
+        <p><strong>Lançamento:</strong> ${escapeHtml(album.lancamento)}</p>
 
         <div class="card-actions">
           <button class="primary-btn preview-btn" type="button">Tocar prévia</button>
@@ -56,13 +60,13 @@
     card.className = "band-card";
 
     card.innerHTML = `
-      <img src="${musica.imagem}" class="band-image" alt="${musica.musica}">
+      <img src="${safeImageUrl(musica.imagem)}" class="band-image" alt="${escapeHtml(musica.musica)}">
       <div class="band-content">
-        <h3>${musica.musica}</h3>
-        <span class="tag">${musica.genero}</span>
-        <p><strong>Artista:</strong> ${musica.nome}</p>
-        <p><strong>Álbum:</strong> ${musica.album}</p>
-        <p><strong>Lançamento:</strong> ${musica.lancamento}</p>
+        <h3>${escapeHtml(musica.musica)}</h3>
+        <span class="tag">${escapeHtml(musica.genero)}</span>
+        <p><strong>Artista:</strong> ${escapeHtml(musica.nome)}</p>
+        <p><strong>Álbum:</strong> ${escapeHtml(musica.album)}</p>
+        <p><strong>Lançamento:</strong> ${escapeHtml(musica.lancamento)}</p>
 
         <div class="card-actions">
           <button class="primary-btn preview-btn" type="button" ${musica.previewUrl ? "" : "disabled"}>
@@ -101,10 +105,10 @@
     card.className = "band-card artist-card";
 
     card.innerHTML = `
-      <div class="artist-placeholder">${artista.nome.charAt(0).toUpperCase()}</div>
+      <div class="artist-placeholder">${escapeHtml(artista.nome.charAt(0).toUpperCase())}</div>
       <div class="band-content">
-        <h3>${artista.nome}</h3>
-        <span class="tag">${artista.genero}</span>
+        <h3>${escapeHtml(artista.nome)}</h3>
+        <span class="tag">${escapeHtml(artista.genero)}</span>
         <p><strong>Resultado:</strong> Artista</p>
 
         <div class="card-actions">

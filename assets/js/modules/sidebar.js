@@ -1,4 +1,7 @@
 (function initWikibandSidebar(window) {
+  const Safe = window.WikibandSafe;
+  const escapeHtml = Safe?.escapeHtml || ((value) => String(value ?? ""));
+
   function renderHistory({ container, history, getModeLabel, onSearchAgain }) {
     if (!history.length) {
       container.innerHTML = `<p class="vazio">Nenhuma pesquisa ainda.</p>`;
@@ -13,8 +16,8 @@
       const historyItem = document.createElement("div");
       historyItem.className = "item-lateral";
       historyItem.innerHTML = `
-        <strong>${term}</strong>
-        <p>${getModeLabel(type)}</p>
+        <strong>${escapeHtml(term)}</strong>
+        <p>${escapeHtml(getModeLabel(type))}</p>
         <button>Pesquisar de novo</button>
       `;
 
@@ -38,9 +41,9 @@
       const item = document.createElement("div");
       item.className = "item-lateral";
       item.innerHTML = `
-        <strong>${album.album || album.nome}</strong>
-        <p>${album.nome}</p>
-        <p>${album.genero}</p>
+        <strong>${escapeHtml(album.album || album.nome)}</strong>
+        <p>${escapeHtml(album.nome)}</p>
+        <p>${escapeHtml(album.genero)}</p>
         <button class="ver-favorito">Ver detalhes</button>
         <button class="remover-favorito danger mini-btn">Remover</button>
       `;
@@ -69,8 +72,8 @@
       const item = document.createElement("div");
       item.className = "item-lateral";
       item.innerHTML = `
-        <strong>${banda.nome}</strong>
-        <p>${banda.genero}</p>
+        <strong>${escapeHtml(banda.nome)}</strong>
+        <p>${escapeHtml(banda.genero)}</p>
         <button class="ver-favorito">Ver detalhes</button>
         <button class="remover-banda-favorita danger mini-btn">Remover</button>
       `;

@@ -7,7 +7,7 @@ function getPool() {
   if (!pool) {
     pool = new Pool({
       connectionString: config.db.url,
-      ssl: config.db.ssl ? { rejectUnauthorized: false } : undefined
+      ssl: config.db.ssl ? { rejectUnauthorized: config.db.sslRejectUnauthorized } : undefined
     });
   }
 

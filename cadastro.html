@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,16 +11,17 @@
   <link rel="manifest" href="/site.webmanifest">
   <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
+
 <body>
   <header class="topo topo-menor auth-topo">
     <div class="topo-conteudo auth-topo-conteudo">
       <a href="/index.html" class="auth-brand brand-loop" aria-label="Wikiband: albums, music, artists, now.">
         <span class="brand-fixed">Wikiband</span>
         <span class="brand-cycle" aria-hidden="true">
-          <span>albums</span>
-          <span>music</span>
-          <span>artists</span>
-          <span>now</span>
+          <span>Albums.</span>
+          <span>Music.</span>
+          <span>Artists.</span>
+          <span>Now.</span>
         </span>
       </a>
       <p>Crie sua conta e mantenha seus favoritos sincronizados.</p>
@@ -34,67 +36,34 @@
       <form id="cadastroForm" class="auth-form" action="#" method="post" novalidate>
         <label class="auth-field" for="signupName">
           <span>Nome</span>
-          <input
-            id="signupName"
-            type="text"
-            name="nome"
-            placeholder="Seu nome"
-            autocomplete="name"
-            required
-          />
+          <input id="signupName" type="text" name="nome" placeholder="Seu nome" autocomplete="name" maxlength="80"
+            required />
         </label>
 
         <label class="auth-field" for="signupUsername">
           <span>Nome de usuario</span>
-          <input
-            id="signupUsername"
-            type="text"
-            name="username"
-            placeholder="arthurmartinssw"
-            autocomplete="username"
-            minlength="3"
-            maxlength="24"
-            pattern="[a-z0-9_]{3,24}"
-            required
-          />
+          <input id="signupUsername" type="text" name="username" placeholder="arthurmartinssw" autocomplete="username"
+            minlength="3" maxlength="24" pattern="[a-z0-9_]{3,24}" required />
           <small>Use letras minusculas, numeros e underline.</small>
         </label>
 
         <label class="auth-field" for="signupEmail">
           <span>E-mail</span>
-          <input
-            id="signupEmail"
-            type="email"
-            name="email"
-            placeholder="voce@exemplo.com"
-            autocomplete="email"
-            required
-          />
+          <input id="signupEmail" type="email" name="email" placeholder="voce@exemplo.com" autocomplete="email"
+            maxlength="254" required />
         </label>
 
         <label class="auth-field" for="signupPassword">
           <span>Senha</span>
-          <input
-            id="signupPassword"
-            type="password"
-            name="senha"
-            placeholder="********"
-            autocomplete="new-password"
-            required
-          />
+          <input id="signupPassword" type="password" name="senha" placeholder="********" autocomplete="new-password"
+            maxlength="128" required />
           <small>Minimo 8 caracteres, uma maiuscula e um numero.</small>
         </label>
 
         <label class="auth-field" for="signupConfirmPassword">
           <span>Confirmar senha</span>
-          <input
-            id="signupConfirmPassword"
-            type="password"
-            name="confirmarSenha"
-            placeholder="********"
-            autocomplete="new-password"
-            required
-          />
+          <input id="signupConfirmPassword" type="password" name="confirmarSenha" placeholder="********"
+            autocomplete="new-password" maxlength="128" required />
         </label>
 
         <p id="cadastroStatus" class="auth-feedback" role="status" aria-live="polite"></p>
@@ -113,4 +82,5 @@
   <script src="/assets/js/pages/cadastro.js"></script>
   <script src="/assets/js/core/pwa.js"></script>
 </body>
+
 </html>
