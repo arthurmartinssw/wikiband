@@ -21,7 +21,6 @@ A experiência foi pensada para ser direta e agradável, sem depender de interfa
 - Histórico de buscas.
 - Perfil com nome de usuário e foto local.
 - Painel com estatísticas e preferências musicais.
-- Experiência PWA com suporte a navegação offline básica.
 
 ## Experiência do Usuário
 
