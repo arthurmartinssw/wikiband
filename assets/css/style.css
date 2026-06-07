@@ -54,7 +54,7 @@ body.has-mini-player {
 }
 
 .topo-conteudo {
-  max-width: 1200px;
+  width: min(1440px, calc(100% - 32px));
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
@@ -313,9 +313,9 @@ body.has-mini-player {
 }
 
 .search-section {
-  max-width: 1200px;
+  width: min(1440px, calc(100% - 32px));
   margin: 22px auto 10px;
-  padding: 0 20px;
+  padding: 0;
 }
 
 .search-modes {
@@ -461,18 +461,38 @@ body.has-mini-player {
 }
 
 .container {
-  max-width: 1200px;
+  width: min(1440px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 10px 20px 40px;
+  padding: 10px 0 48px;
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 320px);
+  grid-template-areas:
+    "results sidebar"
+    "footer footer";
+  gap: 18px;
+  align-items: start;
+}
+
+.results-panel {
+  grid-area: results;
+  min-width: 0;
 }
 
 .sidebar {
+  grid-area: sidebar;
+  position: sticky;
+  top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
+}
+
+.sidebar .painel {
+  padding: 14px;
+}
+
+.sidebar .painel-header {
+  margin-bottom: 12px;
 }
 
 .discovery-panel {
@@ -527,8 +547,9 @@ body.has-mini-player {
 .bands-grid,
 .favoritos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 12px;
+  align-items: start;
 }
 
 .band-card,
@@ -550,47 +571,57 @@ body.has-mini-player {
 .band-image,
 .favorite-card img {
   width: 100%;
-  height: 185px;
+  height: 142px;
   object-fit: cover;
   display: block;
   background: #0e100f;
 }
 
 .artist-placeholder {
-  height: 185px;
+  height: 142px;
   display: grid;
   place-items: center;
   background: #20231f;
   color: var(--accent-strong);
-  font-size: 2.6rem;
+  font-size: 2.2rem;
   font-weight: 700;
 }
 
 .band-content,
 .favorite-card-body {
-  padding: 15px;
+  padding: 11px;
 }
 
 .band-content h3,
 .favorite-card-body h3 {
-  margin-bottom: 10px;
-  font-size: 1.08rem;
+  margin-bottom: 8px;
+  font-size: 0.96rem;
   line-height: 1.25;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .tag {
   display: inline-block;
-  padding: 5px 8px;
+  padding: 4px 7px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: #20231f;
   color: var(--muted);
-  font-size: 0.82rem;
-  margin-bottom: 10px;
+  font-size: 0.74rem;
+  margin-bottom: 8px;
 }
 
 .band-content p,
-.favorite-card-body p,
+.favorite-card-body p {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.4;
+  margin-bottom: 5px;
+}
+
 .detalhe-content p,
 .sobre-box p {
   color: var(--muted);
@@ -601,14 +632,17 @@ body.has-mini-player {
 
 .card-actions,
 .favorite-card-actions {
-  margin-top: 12px;
+  margin-top: 9px;
+  gap: 6px;
 }
 
 .card-actions button,
 .card-actions a,
 .favorite-card-actions button {
-  padding: 9px 11px;
-  font-size: 0.88rem;
+  min-height: 31px;
+  padding: 7px 8px;
+  font-size: 0.78rem;
+  line-height: 1.2;
 }
 
 .card-actions button:disabled,
@@ -673,7 +707,7 @@ body.has-mini-player {
   background: var(--surface-soft);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px;
+  padding: 10px;
 }
 
 .item-lateral strong {
@@ -1784,6 +1818,23 @@ body.has-mini-player .music-assistant-panel {
 @media (max-width: 900px) {
   .container {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "results"
+      "sidebar"
+      "footer";
+    gap: 14px;
+  }
+
+  .sidebar {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .bands-grid,
+  .favoritos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 
   .profile-page {
@@ -1833,6 +1884,86 @@ body.has-mini-player .music-assistant-panel {
 @media (max-width: 560px) {
   body.has-mini-player {
     padding-bottom: 156px;
+  }
+
+  .topo-conteudo,
+  .search-section,
+  .container {
+    width: calc(100% - 20px);
+  }
+
+  .container {
+    gap: 12px;
+    padding-bottom: 34px;
+  }
+
+  .painel {
+    padding: 12px;
+  }
+
+  .painel-header {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-bottom: 12px;
+  }
+
+  .painel-header-actions {
+    width: 100%;
+  }
+
+  .painel-header-actions .mini-btn {
+    flex: 1;
+  }
+
+  .search-box input,
+  .filters-row select {
+    min-width: 100%;
+  }
+
+  .search-box button {
+    flex: 1;
+  }
+
+  .bands-grid,
+  .favoritos-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .band-image,
+  .favorite-card img,
+  .artist-placeholder {
+    height: 118px;
+  }
+
+  .band-content,
+  .favorite-card-body {
+    padding: 9px;
+  }
+
+  .band-content h3,
+  .favorite-card-body h3 {
+    font-size: 0.88rem;
+  }
+
+  .band-content p,
+  .favorite-card-body p {
+    font-size: 0.76rem;
+  }
+
+  .tag {
+    font-size: 0.68rem;
+  }
+
+  .card-actions button,
+  .card-actions a,
+  .favorite-card-actions button {
+    width: 100%;
+    font-size: 0.72rem;
+  }
+
+  .sidebar {
+    grid-template-columns: 1fr;
   }
 
   .music-assistant {
@@ -1970,67 +2101,53 @@ body.has-mini-player .music-assistant-panel {
   text-decoration: underline;
 }
 
-.sidebar-toggle {
-  display: none;
-  position: fixed;
-  top: 24px;
-  right: 20px;
-  z-index: 90;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-raised);
-  color: var(--text);
-  cursor: pointer;
-  font-size: 1.2rem;
-  line-height: 1;
-  padding: 0;
-}
-
-.sidebar-toggle:hover {
-  border-color: var(--border-strong);
-  background: #272b26;
-}
-
 .footer-nav {
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 20px;
-  margin: 40px 0;
-  text-align: center;
+  grid-area: footer;
+  margin-top: 10px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #151715;
 }
 
 .footer-nav-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  gap: 22px;
   align-items: center;
 }
 
+.footer-nav-brand {
+  display: grid;
+  gap: 5px;
+}
+
+.footer-nav-brand strong {
+  font-size: 1rem;
+}
+
+.footer-nav-brand span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .footer-nav-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  gap: 7px;
+  justify-items: start;
 }
 
 .footer-nav-section h3 {
   font-size: 0.9rem;
   color: var(--muted);
-  margin-bottom: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0;
 }
 
 .footer-nav-links {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
-  justify-content: center;
 }
 
 .footer-nav-links a {
@@ -2044,65 +2161,32 @@ body.has-mini-player .music-assistant-panel {
   text-decoration: underline;
 }
 
-@media (max-width: 560px) {
-  .sidebar-toggle {
-    display: block;
-  }
-
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 85;
-    background: var(--bg);
-    overflow-y: auto;
-    padding: 80px 20px 40px;
-    max-width: 100%;
-    max-height: 100vh;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-  }
-
-  .sidebar.is-open {
-    transform: translateX(0);
-  }
-
-  .sidebar::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-  }
-
-  .sidebar.is-open::before {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
+@media (max-width: 900px) {
   .footer-nav {
-    padding: 16px;
-    margin: 30px 0;
+    margin-top: 0;
   }
 
   .footer-nav-content {
-    flex-direction: column;
-    gap: 16px;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
   }
 
-  .footer-nav-section {
-    width: 100%;
+  .footer-nav-brand {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .footer-nav {
+    padding: 14px;
+  }
+
+  .footer-nav-content {
+    grid-template-columns: 1fr;
+    gap: 14px;
   }
 
   .footer-nav-links {
-    justify-content: center;
+    gap: 8px;
   }
 }
