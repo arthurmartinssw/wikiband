@@ -1,5 +1,5 @@
-const CACHE_NAME = "wikiband-shell-v12";
-const RUNTIME_CACHE = "wikiband-runtime-v12";
+const CACHE_NAME = "wikiband-shell-v13";
+const RUNTIME_CACHE = "wikiband-runtime-v13";
 
 const APP_SHELL = [
   "/",
@@ -22,6 +22,7 @@ const APP_SHELL = [
   "/assets/js/modules/share.js",
   "/assets/js/modules/result-cards.js",
   "/assets/js/modules/sidebar.js",
+  "/assets/js/modules/music-assistant.js",
   "/assets/js/data/artist-profiles.js",
   "/assets/js/pages/home.js",
   "/assets/js/pages/favoritos.js",
