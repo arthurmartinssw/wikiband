@@ -1,5 +1,5 @@
-const CACHE_NAME = "wikiband-shell-v14";
-const RUNTIME_CACHE = "wikiband-runtime-v14";
+const CACHE_NAME = "wikiband-shell-v15";
+const RUNTIME_CACHE = "wikiband-runtime-v15";
 
 const APP_SHELL = [
   "/",
