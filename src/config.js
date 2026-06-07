@@ -82,31 +82,23 @@ function readSessionSecret(isProduction) {
   return generatedSecret;
 }
 
-const dbClient = readEnv("DB_CLIENT", readEnv("DATABASE_URL") ? "postgres" : "firebird").toLowerCase();
-const isPostgres = dbClient === "postgres" || dbClient === "postgresql";
+const dbClient = readEnv("DB_CLIENT", "postgres").toLowerCase();
 const nodeEnv = readEnv("NODE_ENV", "development").toLowerCase();
 const isProduction = nodeEnv === "production";
+
+if (!["postgres", "postgresql"].includes(dbClient)) {
+  throw new Error("DB_CLIENT deve ser postgres.");
+}
 
 module.exports = {
   port: Number(readEnv("PORT", "3000")) || 3000,
   env: nodeEnv,
-  db: isPostgres
-    ? {
-        client: "postgres",
-        url: requiredEnv("DATABASE_URL"),
-        ssl: readBooleanEnv("DB_SSL", true),
-        sslRejectUnauthorized: readBooleanEnv("DB_SSL_REJECT_UNAUTHORIZED", true)
-      }
-    : {
-        client: "firebird",
-        host: readEnv("DB_HOST", "127.0.0.1"),
-        port: Number(readEnv("DB_PORT", "3050")) || 3050,
-        database: requiredEnv("DB_PATH"),
-        user: requiredEnv("DB_USER"),
-        password: requiredEnv("DB_PASSWORD"),
-        lowercase_keys: true,
-        pageSize: 4096
-      },
+  db: {
+    client: "postgres",
+    url: requiredEnv("DATABASE_URL"),
+    ssl: readBooleanEnv("DB_SSL", true),
+    sslRejectUnauthorized: readBooleanEnv("DB_SSL_REJECT_UNAUTHORIZED", true)
+  },
   security: {
     isProduction,
     sessionSecret: readSessionSecret(isProduction),

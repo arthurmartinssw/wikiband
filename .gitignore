@@ -1,5 +1,9 @@
 node_modules/
 
+# Local/private docs and legacy adapters
+docs/
+src/db/firebird.js
+
 # Environment and secrets
 .env
 .env.*
