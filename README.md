@@ -1,55 +1,70 @@
 # Wikiband
 
-Wikiband é uma plataforma web para descobrir artistas, álbuns e músicas de forma simples, visual e organizada.
+Wikiband é uma vitrine de música: um lugar para conhecer artistas, ouvir prévias, ver o que está em alta no Brasil e guardar descobertas em uma biblioteca pessoal.
 
-A proposta do site é reunir busca musical, prévias de faixas, favoritos, coleções pessoais e perfil de usuário em uma experiência leve para quem gosta de explorar música, conhecer discografias e guardar referências para ouvir depois.
+## Principais recursos
 
-## Sobre o Projeto
-
-O Wikiband nasceu como um catálogo interativo de música. Em vez de ser apenas uma busca comum, o site funciona como um espaço pessoal de descoberta: o usuário pesquisa artistas, encontra álbuns e músicas reais, escuta prévias, salva favoritos e organiza seus achados em coleções.
-
-A experiência foi pensada para ser direta e agradável, sem depender de interfaces complexas. A ideia central é transformar a pesquisa musical em algo mais explorável, com histórico, filtros, detalhes dos artistas e recursos para continuar navegando entre resultados relacionados.
-
-## Principais Recursos
-
-- Busca por artistas, álbuns e músicas.
-- Resultados baseados em dados musicais reais.
-- Reprodução de prévias de faixas.
-- Página de detalhes para artistas, álbuns e músicas.
-- Favoritos de álbuns e bandas.
-- Coleções pessoais criadas pelo usuário.
-- Histórico de buscas.
-- Perfil com nome de usuário e foto local.
-- Painel com estatísticas e preferências musicais.
-
-## Experiência do Usuário
-
-O site foi desenvolvido para permitir que o usuário:
-
-- encontre rapidamente uma banda, artista, álbum ou música;
-- descubra novas referências a partir de buscas e filtros;
-- escute prévias sem sair da página;
-- mantenha uma lista pessoal de favoritos;
-- organize músicas e álbuns em coleções;
-- acesse um perfil próprio dentro da aplicação.
+- **Vitrine**: ranking "Em alta no Brasil" (músicas e álbuns mais ouvidos no Apple Music), exploração por gênero e sugestões rápidas.
+- **Busca** por álbuns, músicas e artistas, com filtros de gênero, país, década e ordenação.
+- **Página de artista**: biografia (Wikipédia), músicas populares, discografia completa e prévias.
+- **Player** com fila, rádio dos resultados, rádio dos favoritos e "tocar o ranking".
+- **Biblioteca na nuvem**: favoritos, coleções, histórico e reproduções sincronizados entre dispositivos.
+- **Retrospectiva**: artista, gênero e década favoritos, com compartilhamento.
+- **Perfil público** opcional (`/usuario.html?u=seu_usuario`), privado por padrão.
+- **MusicAI**: assistente com IA que responde, recomenda e **monta playlists** que tocam direto no player.
+- **Tema escuro e claro**, layout responsivo com barra de abas no celular e PWA.
 
 ## Tecnologia
 
-O Wikiband utiliza uma arquitetura web simples e objetiva:
+- Frontend: HTML, CSS e JavaScript puros (sem build).
+- Backend: Node.js + Express, PostgreSQL (Neon) para contas e biblioteca.
+- Vercel: páginas estáticas, proxy da API (`api/proxy.js`), MusicAI (`api/musicai.js`) e ranking (`api/charts.js`).
+- Dados: API pública do iTunes, feed de ranking do Apple Music e Wikipédia.
 
-- HTML, CSS e JavaScript no frontend;
-- Node.js e Express no backend;
-- PostgreSQL para autenticação e dados de usuários;
-- integração com a API do iTunes para dados musicais;
-- deploy preparado para Vercel, Render e Neon/PostgreSQL.
+## Rodando localmente
 
-O projeto também conta com medidas de segurança no backend, como validação de entrada, senhas com hash, proteção contra abuso de requisições, cabeçalhos de segurança e restrição de arquivos públicos.
+```bash
+npm install
+cp .env.example .env   # preencha DATABASE_URL e SESSION_SECRET
+npm run dev            # http://localhost:3000
+npm test               # testes da API com Postgres em memória
+```
 
-## Objetivo
+A tabela `USUARIO_BIBLIOTECA` é criada automaticamente na primeira inicialização do backend.
 
-O objetivo do Wikiband é ser um site de descoberta musical com identidade própria: simples o suficiente para usar rapidamente, mas completo o bastante para salvar, organizar e revisitar descobertas musicais.
+## Variáveis de ambiente
 
-Mais do que listar resultados, o projeto busca criar um pequeno ambiente pessoal para explorar música.
+| Variável | Onde | Para quê |
+| --- | --- | --- |
+| `DATABASE_URL`, `DB_SSL*` | backend | Postgres |
+| `SESSION_SECRET` | backend | assinatura das sessões (32+ caracteres) |
+| `CORS_ORIGINS` | backend | origens permitidas |
+| `PROXY_SHARED_SECRET` | backend **e** Vercel | o proxy repassa o IP real do usuário para o rate limit |
+| `WIKIBAND_API_ORIGIN` | Vercel | endereço do backend |
+| `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, `AI_BASE_URL`, `GROQ_API_KEY` | Vercel | provedor da MusicAI |
+
+### Trocando a IA da MusicAI
+
+A MusicAI usa uma camada de provedores em `api/_lib/ai.js`. Groq é o padrão. Para trocar, mude só as variáveis:
+
+```bash
+AI_PROVIDER=openai      # ou gemini, openrouter, custom
+AI_API_KEY=...
+AI_MODEL=nome-do-modelo
+# AI_BASE_URL=...       # só para "custom" (qualquer API compatível com OpenAI, ex.: Ollama)
+```
+
+Para uma API com formato diferente, escreva um adaptador em `api/_lib/ai.js` e registre-o em `ADAPTERS`.
+
+## Segurança
+
+- Senhas com bcrypt (limite de 72 bytes validado), comparação em tempo constante e hash falso para usuário inexistente.
+- Sessões assinadas com HMAC e amarradas ao hash da senha: trocar a senha encerra todas as outras sessões.
+- Rate limit por IP real (repassado pelo proxy com segredo compartilhado), por e-mail no login e por rota.
+- CSP restritiva, HSTS, `X-Frame-Options`, `nosniff`, arquivos públicos em lista fechada.
+- Proxy da Vercel com lista fechada de rotas e métodos.
+- Perfil público só expõe campos selecionados (nunca o e-mail) e responde igual para perfil inexistente ou privado.
+- MusicAI recusa chamadas de outros sites e tem limite de mensagens.
 
 ## Status
 

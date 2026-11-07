@@ -20,6 +20,12 @@ const refreshDiscoveryButton = document.getElementById("refreshDiscoveryButton")
 const discoverGenres = document.getElementById("discoverGenres");
 const discoverCountries = document.getElementById("discoverCountries");
 const discoverDecades = document.getElementById("discoverDecades");
+const resultsTitle = document.getElementById("resultsTitle");
+const chartSongs = document.getElementById("chartSongs");
+const chartAlbums = document.getElementById("chartAlbums");
+const genreGrid = document.getElementById("genreGrid");
+const quickChips = document.getElementById("quickChips");
+const playChartsButton = document.getElementById("playChartsButton");
 
 const Storage = window.WikibandStorage;
 const Results = window.WikibandResults;
@@ -400,19 +406,29 @@ function tocarPreviewMusica(musica, previewBtn) {
   WikiPreview.playTrack(faixa, musica, previewBtn);
 }
 
+// Favorites and collections are stored per account.
+function exigirLogin() {
+  if (Storage.getCurrentSession()) return true;
+  window.WikibandUI?.toast("Entre na sua conta para salvar favoritos e coleções.");
+  return false;
+}
+
 function toggleAlbumFavorite(album) {
+  if (!exigirLogin()) return;
   Storage.toggleAlbumFavorite(album);
   renderFavorites();
   aplicarFiltrosERenderizar();
 }
 
 function toggleBandFavorite(banda) {
+  if (!exigirLogin()) return;
   Storage.toggleBandFavorite(banda);
   renderBandFavorites();
   aplicarFiltrosERenderizar();
 }
 
 function addToCollection(item) {
+  if (!exigirLogin()) return;
   const collections = Storage.getCollections();
 
   if (!collections.length) {
@@ -425,7 +441,7 @@ function addToCollection(item) {
     if (!collection) return;
 
     Storage.addItemToCollection(collection.id, item);
-    statusText.textContent = `Item salvo em "${collection.name}".`;
+    window.WikibandUI?.toast(`Salvo em "${collection.name}"`);
     return;
   }
 
@@ -446,7 +462,7 @@ function addToCollection(item) {
   if (!collection) return;
 
   Storage.addItemToCollection(collection.id, item);
-  statusText.textContent = `Item salvo em "${collection.name}".`;
+  window.WikibandUI?.toast(`Salvo em "${collection.name}"`);
 }
 
 function getCardContext() {
@@ -466,6 +482,9 @@ function getCardContext() {
 
 function renderizarResultados(lista) {
   bandsGrid.innerHTML = "";
+  // The showcase hides while a search is active so results sit right under the search box.
+  document.body.classList.toggle("is-searching", contextoResultados === "search");
+  resultsTitle.textContent = contextoResultados === "search" ? `Resultados para "${searchInput.value.trim()}"` : "Explorar";
 
   if (!lista.length) {
     if (contextoResultados === "library") {
@@ -747,17 +766,20 @@ stopRadioButton.addEventListener("click", () => {
 });
 
 clearHistoryButton.addEventListener("click", () => {
+  if (!window.confirm("Limpar o histórico de buscas?")) return;
   Storage.clearHistory();
   renderHistory();
 });
 
 clearFavoritesButton.addEventListener("click", () => {
+  if (!window.confirm("Remover todos os álbuns favoritos?")) return;
   Storage.clearAlbumFavorites();
   renderFavorites();
   aplicarFiltrosERenderizar();
 });
 
 clearBandFavoritesButton.addEventListener("click", () => {
+  if (!window.confirm("Remover todos os artistas favoritos?")) return;
   Storage.clearBandFavorites();
   renderBandFavorites();
   aplicarFiltrosERenderizar();
@@ -795,6 +817,156 @@ function inicializarBuscaDaUrl() {
   carregarBibliotecaInicial();
 }
 
+// ---------- Showcase: charts, genres, quick picks ----------
+
+const GENRES = [
+  { label: "Rock", term: "rock", hue: 220 },
+  { label: "MPB", term: "mpb", hue: 160 },
+  { label: "Pop", term: "pop", hue: 300 },
+  { label: "Sertanejo", term: "sertanejo", hue: 30 },
+  { label: "Hip-Hop", term: "hip hop", hue: 260 },
+  { label: "Samba & Pagode", term: "samba pagode", hue: 12 },
+  { label: "Funk", term: "funk brasileiro", hue: 330 },
+  { label: "Eletrônica", term: "electronic", hue: 190 },
+  { label: "Jazz", term: "jazz", hue: 45 },
+  { label: "Metal", term: "metal", hue: 0 },
+  { label: "Indie", term: "indie", hue: 140 },
+  { label: "Gospel", term: "gospel", hue: 205 }
+];
+const QUICK_PICKS = ["Legião Urbana", "Anitta", "Coldplay", "Marília Mendonça", "Arctic Monkeys", "Djavan"];
+let chartSongItems = [];
+
+function buscarTermo(termo, tipo = "album") {
+  searchType = tipo;
+  searchInput.value = termo;
+  atualizarModoBusca();
+  pesquisarBandas({ saveTerm: true, syncUrl: true, pushUrl: true }).then(() => {
+    document.getElementById("explorar").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+function renderQuickPicks() {
+  quickChips.replaceChildren(
+    ...QUICK_PICKS.map((nome) => createChip(nome, () => buscarTermo(nome, "album")))
+  );
+}
+
+function renderGenres() {
+  genreGrid.replaceChildren(
+    ...GENRES.map((genre) => {
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = "genre-tile";
+      tile.textContent = genre.label;
+      tile.style.setProperty("--tile", `linear-gradient(135deg, hsl(${genre.hue} 80% 55%), hsl(${genre.hue + 25} 75% 20%))`);
+      tile.addEventListener("click", () => buscarTermo(genre.term, "album"));
+      return tile;
+    })
+  );
+}
+
+function renderRailSkeleton(container, count = 8) {
+  container.replaceChildren(
+    ...Array.from({ length: count }, () => {
+      const item = document.createElement("div");
+      item.className = "skeleton";
+      return item;
+    })
+  );
+}
+
+function createRailItem(item, rank) {
+  const tile = document.createElement("article");
+  tile.className = "rail-item";
+  tile.tabIndex = 0;
+  tile.innerHTML = `
+    <div class="rail-art">
+      <img src="${Safe.safeImageUrl(item.imagem)}" alt="" loading="lazy">
+      <span class="rail-rank">${rank}</span>
+      <button class="play-fab" type="button">Tocar prévia</button>
+    </div>
+    <span class="rail-title"></span>
+    <span class="rail-sub"></span>
+  `;
+  tile.querySelector(".rail-title").textContent = item.tipo === "song" ? item.musica : item.album;
+  tile.querySelector(".rail-sub").textContent = item.nome;
+
+  const playBtn = tile.querySelector(".play-fab");
+  playBtn.dataset.previewIdleText = "Tocar prévia";
+  playBtn.dataset.previewPlayingText = "Pausar prévia";
+  playBtn.addEventListener("click", async () => {
+    if (item.tipo === "song") {
+      tocarPreviewMusica(item, playBtn);
+      return;
+    }
+
+    playBtn.disabled = true;
+    try {
+      const preview = await WikiPreview.getFirstPreview(item);
+      if (preview) WikiPreview.playTrack(preview, item, playBtn);
+      else window.WikibandUI?.toast("Prévia indisponível para este álbum.");
+    } finally {
+      playBtn.disabled = false;
+    }
+  });
+
+  tile.addEventListener("click", (event) => {
+    if (!event.target.closest("button")) abrirDetalhes(item);
+  });
+  tile.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && event.target === tile) abrirDetalhes(item);
+  });
+  return tile;
+}
+
+async function carregarRanking(type, container) {
+  renderRailSkeleton(container);
+
+  try {
+    const resposta = await fetch(buildApiUrl(`/charts?type=${type}`));
+    const dados = await resposta.json();
+
+    if (!resposta.ok || !dados.ok || !dados.results?.length) throw new Error("ranking vazio");
+
+    const itens = dados.results.map((raw) => Results.montarResultado(raw, type === "songs" ? "song" : "album"));
+    container.replaceChildren(...itens.map((item, index) => createRailItem(item, index + 1)));
+    return itens;
+  } catch (erro) {
+    console.warn("Ranking indisponivel:", erro);
+    container.innerHTML = `<p class="vazio">Não foi possível carregar o ranking agora.</p>`;
+    return [];
+  }
+}
+
+function carregarVitrine() {
+  renderQuickPicks();
+  renderGenres();
+  carregarRanking("songs", chartSongs).then((itens) => {
+    chartSongItems = itens.filter((item) => item.previewUrl);
+    playChartsButton.disabled = !chartSongItems.length;
+  });
+  carregarRanking("albums", chartAlbums);
+}
+
+playChartsButton.addEventListener("click", () => {
+  if (!chartSongItems.length) return;
+  WikiPreview.startRadio(chartSongItems, { label: "Em alta no Brasil" }).catch((erro) => {
+    console.warn("Nao foi possivel tocar o ranking:", erro);
+  });
+});
+
+document.addEventListener("wikiband:library-synced", () => {
+  renderHistory();
+  renderFavorites();
+  renderBandFavorites();
+  aplicarFiltrosERenderizar();
+});
+
+if (new URLSearchParams(window.location.search).get("focus") === "search") {
+  searchInput.focus();
+}
+
+carregarVitrine();
 renderHistory();
 renderFavorites();
 renderBandFavorites();

@@ -1,9 +1,30 @@
+const crypto = require("crypto");
+const config = require("../config");
+
 const DEFAULT_WINDOW_MS = 60 * 1000;
 const DEFAULT_MAX = 60;
 const MAX_TRACKED_KEYS = 5000;
 
-function defaultKeyGenerator(req) {
+function sha256(value) {
+  return crypto.createHash("sha256").update(String(value)).digest();
+}
+
+// Behind the Vercel proxy every request arrives from Vercel's IP, so the proxy sends the real
+// client IP; it is only trusted when the shared secret matches.
+function clientIp(req) {
+  const secret = config.security.proxySecret;
+  const sentSecret = req.get?.("x-wikiband-proxy-secret");
+  const forwardedIp = String(req.get?.("x-wikiband-client-ip") || "").trim().slice(0, 64);
+
+  if (secret && sentSecret && forwardedIp && crypto.timingSafeEqual(sha256(sentSecret), sha256(secret))) {
+    return forwardedIp;
+  }
+
   return req.ip || req.socket?.remoteAddress || "unknown";
+}
+
+function defaultKeyGenerator(req) {
+  return clientIp(req);
 }
 
 function cleanupExpiredEntries(store, now) {
@@ -79,5 +100,6 @@ function createRateLimiter(options = {}) {
 }
 
 module.exports = {
+  clientIp,
   createRateLimiter
 };

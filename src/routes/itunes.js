@@ -30,8 +30,11 @@ function parseLimit(rawLimit, fallback = 50) {
   return Math.max(1, Math.min(200, Math.trunc(parsed)));
 }
 
+const TERM_MAX_LENGTH = 200;
+
+// Up to 200 numeric ids, comma separated.
 function isValidLookupId(value) {
-  return /^\d+(,\d+)*$/.test(value);
+  return /^\d{1,15}(,\d{1,15}){0,199}$/.test(value);
 }
 
 async function fetchItunes(pathname, searchParams) {
@@ -57,11 +60,11 @@ router.get("/search", async (req, res) => {
   const entity = sanitizeText(req.query.entity || "album");
   const limit = parseLimit(req.query.limit, 50);
 
-  if (!term) {
+  if (!term || term.length > TERM_MAX_LENGTH) {
     res.status(400).json({
       ok: false,
       code: "VALIDATION_ERROR",
-      message: "Informe o termo de busca."
+      message: "Informe um termo de busca de ate 200 caracteres."
     });
     return;
   }

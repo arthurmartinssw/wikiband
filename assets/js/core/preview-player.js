@@ -1,6 +1,6 @@
 const WikiPreview = (() => {
   const Storage = window.WikibandStorage;
-  const PLACEHOLDER_IMAGEM = "https://via.placeholder.com/300x300?text=Sem+Imagem";
+  const PLACEHOLDER_IMAGEM = "/assets/img/placeholder.svg";
 
   const trackCache = new Map();
   let player = null;
@@ -144,7 +144,7 @@ const WikiPreview = (() => {
     if (player) return;
 
     player = document.createElement("section");
-    player.className = "mini-player";
+    player.className = "mini-player glass";
     player.setAttribute("aria-live", "polite");
     player.innerHTML = `
       <div class="mini-player-inner">
@@ -156,12 +156,13 @@ const WikiPreview = (() => {
         </div>
         <audio class="mini-player-audio" controls></audio>
         <div class="mini-player-actions">
-          <button class="mini-player-prev" type="button">Anterior</button>
-          <button class="mini-player-toggle" type="button">Pausar</button>
-          <button class="mini-player-next" type="button">Proxima</button>
-          <button class="mini-player-close" type="button" aria-label="Fechar player">×</button>
+          <button class="mini-player-prev" type="button" aria-label="Faixa anterior">Anterior</button>
+          <button class="mini-player-toggle" type="button" aria-label="Tocar ou pausar">Pausar</button>
+          <button class="mini-player-next" type="button" aria-label="Proxima faixa">Proxima</button>
+          <button class="mini-player-close" type="button" aria-label="Fechar player">Fechar</button>
         </div>
       </div>
+      <div class="mini-player-progress" aria-hidden="true"><span></span></div>
     `;
 
     document.body.appendChild(player);
@@ -176,8 +177,16 @@ const WikiPreview = (() => {
     prevButton = player.querySelector(".mini-player-prev");
     nextButton = player.querySelector(".mini-player-next");
 
+    const progress = player.querySelector(".mini-player-progress span");
+
+    audio.addEventListener("timeupdate", () => {
+      progress.style.width = audio.duration ? `${(audio.currentTime / audio.duration) * 100}%` : "0";
+    });
+
+    audio.addEventListener("pause", () => player.classList.remove("is-playing"));
+
     audio.addEventListener("play", () => {
-      player.classList.add("active");
+      player.classList.add("active", "is-playing");
       document.body.classList.add("has-mini-player");
       toggleButton.textContent = "Pausar";
       updateButton(activeButton, true);

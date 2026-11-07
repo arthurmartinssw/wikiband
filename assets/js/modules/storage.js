@@ -15,6 +15,16 @@
   const WELCOME_KEY = "wikiband_welcome_pending";
   const AVATAR_KEY = "wikiband_avatar";
   const API_BASE_STORAGE_KEY = "wikiband_api_base_url";
+  const LIBRARY_SYNC_KEY = "wikiband_library_sync";
+  // Local lists that are mirrored to the user's cloud library.
+  const SYNC_FIELDS = {
+    [HISTORY_KEY]: "history",
+    [ALBUM_FAVORITES_KEY]: "albumFavorites",
+    [BAND_FAVORITES_KEY]: "bandFavorites",
+    [PLAY_HISTORY_KEY]: "plays",
+    [COLLECTIONS_KEY]: "collections"
+  };
+  const SYNC_DEBOUNCE_MS = 1500;
   const SCOPED_SEPARATOR = "__";
   const USERNAME_REGEX = /^[a-z0-9_]{3,24}$/;
   const NAME_MAX_LENGTH = 80;
@@ -45,7 +55,7 @@
     }
   }
 
-  function safeImageUrl(value, fallback = "https://via.placeholder.com/600x400?text=Sem+Imagem") {
+  function safeImageUrl(value, fallback = "/assets/img/placeholder.svg") {
     const rawValue = String(value || "").trim();
 
     if (rawValue.startsWith("data:") && !/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(rawValue)) {
@@ -222,6 +232,7 @@
     const key = getScopedKey(baseKey);
     if (!key) return items;
     saveList(key, items);
+    markLibraryChanged(baseKey);
     return items;
   }
 
@@ -229,6 +240,189 @@
     const key = getScopedKey(baseKey);
     if (!key) return;
     localStorage.removeItem(key);
+    markLibraryChanged(baseKey);
+  }
+
+  // ---------- Cloud library sync ----------
+  // State per user: { syncedAt: server timestamp of the last sync, dirty: local changes not pushed yet }.
+  // Last writer wins: unpushed local changes overwrite the server, otherwise newer server data wins.
+
+  let syncTimer = null;
+  let syncUnavailable = false;
+  let libraryPrivacy = null;
+
+  function readSyncState() {
+    const key = getScopedKey(LIBRARY_SYNC_KEY);
+    const state = key ? readObject(key) : null;
+    return { syncedAt: Number(state?.syncedAt) || 0, dirty: Boolean(state?.dirty) };
+  }
+
+  function writeSyncState(state) {
+    const key = getScopedKey(LIBRARY_SYNC_KEY);
+    if (key) localStorage.setItem(key, JSON.stringify(state));
+  }
+
+  function markLibraryChanged(baseKey) {
+    if (!(baseKey in SYNC_FIELDS) || !getCurrentSession()?.token) return;
+    writeSyncState({ ...readSyncState(), dirty: true });
+    window.clearTimeout(syncTimer);
+    syncTimer = window.setTimeout(pushLibrary, SYNC_DEBOUNCE_MS);
+  }
+
+  function collectLibrary() {
+    const dados = {};
+    Object.entries(SYNC_FIELDS).forEach(([baseKey, field]) => {
+      dados[field] = readScopedList(baseKey);
+    });
+    return dados;
+  }
+
+  function hasLocalLibrary(dados) {
+    return Object.values(dados).some((list) => Array.isArray(list) && list.length > 0);
+  }
+
+  function applyServerLibrary(dados) {
+    Object.entries(SYNC_FIELDS).forEach(([baseKey, field]) => {
+      const key = getScopedKey(baseKey);
+      if (key) saveList(key, Array.isArray(dados?.[field]) ? dados[field] : []);
+    });
+    document.dispatchEvent(new CustomEvent("wikiband:library-synced"));
+  }
+
+  // Returns true when the request may continue; handles expired sessions and old backends.
+  function handleLibraryResponse(response) {
+    if (response.status === 401) {
+      clearCurrentSession();
+      document.dispatchEvent(new CustomEvent("wikiband:session-expired"));
+      return false;
+    }
+
+    if (!response.ok) {
+      // 404 means the backend predates cloud sync; keep working locally.
+      syncUnavailable = true;
+      return false;
+    }
+
+    return true;
+  }
+
+  async function pushLibrary() {
+    const session = getCurrentSession();
+    if (!session?.token || syncUnavailable) return false;
+
+    try {
+      const { response, body } = await requestJson("/library", {
+        method: "PUT",
+        payload: { dados: collectLibrary() },
+        token: session.token
+      });
+
+      if (!handleLibraryResponse(response) || !body?.ok) return false;
+
+      writeSyncState({ syncedAt: Number(body.atualizadoEm) || Date.now(), dirty: false });
+      libraryPrivacy = Boolean(body.publico);
+      return true;
+    } catch (erro) {
+      console.info("Sincronizacao adiada (sem conexao):", erro);
+      return false;
+    }
+  }
+
+  async function syncLibrary() {
+    const session = getCurrentSession();
+    if (!session?.token || syncUnavailable) return null;
+
+    try {
+      const { response, body } = await requestJson("/library", { token: session.token });
+      if (!handleLibraryResponse(response) || !body?.ok) return null;
+
+      libraryPrivacy = Boolean(body.publico);
+      const state = readSyncState();
+      const serverAt = Number(body.atualizadoEm) || 0;
+
+      if (state.dirty || (!serverAt && hasLocalLibrary(collectLibrary()))) {
+        await pushLibrary();
+      } else if (serverAt > state.syncedAt) {
+        applyServerLibrary(body.dados);
+        writeSyncState({ syncedAt: serverAt, dirty: false });
+      }
+
+      return { publico: libraryPrivacy };
+    } catch (erro) {
+      console.info("Biblioteca na nuvem indisponivel:", erro);
+      return null;
+    }
+  }
+
+  async function getLibraryPrivacy() {
+    if (libraryPrivacy !== null) return { ok: true, publico: libraryPrivacy };
+    const result = await syncLibrary();
+    return result ? { ok: true, publico: result.publico } : { ok: false };
+  }
+
+  async function setLibraryPrivacy(publico) {
+    const session = getCurrentSession();
+    if (!session?.token) return { ok: false, message: "Entre novamente para alterar a privacidade." };
+
+    try {
+      const { response, body } = await requestJson("/library", {
+        method: "PUT",
+        payload: { publico: Boolean(publico) },
+        token: session.token
+      });
+
+      if (response.status === 404) {
+        return { ok: false, message: "O servidor ainda nao suporta perfis publicos." };
+      }
+
+      if (!handleLibraryResponse(response) || !body?.ok) {
+        return { ok: false, message: body?.message || "Nao foi possivel salvar a privacidade." };
+      }
+
+      libraryPrivacy = Boolean(body.publico);
+      // Make sure the public page shows the current favorites.
+      if (libraryPrivacy) await pushLibrary();
+      return { ok: true, publico: libraryPrivacy };
+    } catch (erro) {
+      return { ok: false, message: "Nao foi possivel conectar ao servidor." };
+    }
+  }
+
+  async function changePassword({ senhaAtual, novaSenha } = {}) {
+    const session = getCurrentSession();
+    if (!session?.token) return { ok: false, message: "Entre novamente para trocar a senha." };
+
+    const passwordError = validatePassword(String(novaSenha || ""));
+    if (passwordError) return { ok: false, message: passwordError };
+
+    try {
+      const { response, body } = await postJson(
+        "/auth/password",
+        { senhaAtual: String(senhaAtual || ""), novaSenha: String(novaSenha || "") },
+        { token: session.token }
+      );
+
+      if (!response.ok || !body?.ok) {
+        return { ok: false, message: body?.message || "Nao foi possivel trocar a senha." };
+      }
+
+      saveCurrentSession({ ...session, token: String(body.token || "") });
+      return { ok: true, message: body.message || "Senha alterada." };
+    } catch (erro) {
+      return { ok: false, message: "Nao foi possivel conectar ao servidor." };
+    }
+  }
+
+  async function fetchPublicProfile(username) {
+    const normalized = normalizeUsername(username);
+    if (!USERNAME_REGEX.test(normalized)) return { ok: false, status: 404 };
+
+    try {
+      const { response, body } = await requestJson(`/users/${encodeURIComponent(normalized)}`);
+      return response.ok && body?.ok ? { ok: true, profile: body.profile } : { ok: false, status: response.status };
+    } catch (erro) {
+      return { ok: false, status: 0 };
+    }
   }
 
   function saveCurrentSession(session) {
@@ -849,6 +1043,11 @@
 
   window.WikibandStorage = {
     authenticateUser,
+    changePassword,
+    fetchPublicProfile,
+    getLibraryPrivacy,
+    setLibraryPrivacy,
+    syncLibrary,
     addHistoryTerm,
     addItemToCollection,
     addPlayEvent,

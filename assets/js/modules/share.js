@@ -48,7 +48,6 @@
 
   async function compartilharItem(item, botao) {
     const texto = montarTextoCompartilhar(item);
-    const textoOriginal = botao.textContent;
     const url = obterLinkItem(item);
 
     try {
@@ -60,10 +59,12 @@
         });
       } else {
         await copiarTexto(texto);
-        botao.textContent = "Copiado";
-        setTimeout(() => {
-          botao.textContent = textoOriginal;
-        }, 1400);
+        // Feedback via toast: icon buttons have no text to swap.
+        if (window.WikibandUI) {
+          window.WikibandUI.toast("Link copiado para compartilhar");
+        } else if (botao) {
+          botao.title = "Copiado";
+        }
       }
     } catch (erro) {
       console.warn("Compartilhamento cancelado ou indisponivel:", erro);

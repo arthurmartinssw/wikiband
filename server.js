@@ -4,6 +4,12 @@ const cors = require("cors");
 const config = require("./src/config");
 const authRoutes = require("./src/routes/auth");
 const itunesRoutes = require("./src/routes/itunes");
+const { libraryRouter, usersRouter } = require("./src/routes/library");
+const { migrate } = require("./src/db/library");
+const { isDatabaseConnectionError } = require("./src/db/errors");
+// Vercel serverless handlers, mounted here so local dev and non-Vercel hosts serve them too.
+const musicAiHandler = require("./api/musicai");
+const chartsHandler = require("./api/charts");
 
 const app = express();
 const ROOT_DIR = process.cwd();
@@ -16,6 +22,7 @@ const PAGE_ROUTES = new Map([
   ["/perfil", "perfil.html"],
   ["/banda", "banda.html"],
   ["/sobre", "sobre.html"],
+  ["/usuario", "usuario.html"],
   ["/offline", "offline.html"]
 ]);
 const PUBLIC_FILES = new Set([
@@ -26,6 +33,7 @@ const PUBLIC_FILES = new Set([
   "/perfil.html",
   "/banda.html",
   "/sobre.html",
+  "/usuario.html",
   "/offline.html",
   "/service-worker.js",
   "/site.webmanifest",
@@ -77,7 +85,7 @@ function securityHeaders(req, res, next) {
     "style-src 'self'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://itunes.apple.com",
+    "connect-src 'self' https://itunes.apple.com https://pt.wikipedia.org https://en.wikipedia.org",
     "media-src 'self' https: blob:",
     "object-src 'none'",
     "base-uri 'self'",
@@ -120,11 +128,13 @@ app.use(
     origin(origin, callback) {
       callback(null, isCorsOriginAllowed(origin));
     },
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     maxAge: 600
   })
 );
+// The synced library is larger than other payloads; body-parser skips bodies already parsed.
+app.use("/api/library", express.json({ limit: "600kb" }));
 app.use(express.json({ limit: "64kb" }));
 app.use((error, req, res, next) => {
   if (error instanceof SyntaxError && "body" in error) {
@@ -148,6 +158,10 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/itunes", itunesRoutes);
+app.use("/api/library", libraryRouter);
+app.use("/api/users", usersRouter);
+app.all("/api/musicai", musicAiHandler);
+app.get("/api/charts", chartsHandler);
 
 const staticFiles = express.static(ROOT_DIR, {
   dotfiles: "deny",
@@ -199,6 +213,34 @@ app.use((req, res) => {
   });
 });
 
-app.listen(config.port, () => {
-  console.log(`[wikiband] servidor rodando em http://localhost:${config.port}`);
+app.use((error, req, res, next) => {
+  if (res.headersSent) {
+    next(error);
+    return;
+  }
+
+  if (error?.type === "entity.too.large") {
+    res.status(413).json({ ok: false, code: "PAYLOAD_TOO_LARGE", message: "Corpo da requisicao muito grande." });
+    return;
+  }
+
+  if (isDatabaseConnectionError(error)) {
+    res.status(503).json({ ok: false, code: "DATABASE_UNAVAILABLE", message: "Nao foi possivel conectar ao banco de dados." });
+    return;
+  }
+
+  console.error("[WIKIBAND_ERROR]", req.method, req.path, error);
+  res.status(500).json({ ok: false, code: "INTERNAL_ERROR", message: "Algo deu errado. Tente novamente em instantes." });
 });
+
+if (require.main === module) {
+  migrate().catch((error) => {
+    console.error("[wikiband] nao foi possivel preparar a tabela da biblioteca:", error.message);
+  });
+
+  app.listen(config.port, () => {
+    console.log(`[wikiband] servidor rodando em http://localhost:${config.port}`);
+  });
+}
+
+module.exports = app;

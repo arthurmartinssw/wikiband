@@ -40,18 +40,19 @@
 
     createAuthEvent("login", email);
 
+    // Only a login popup closes itself; a normal tab goes back to the showcase.
     if (opener && !opener.closed) {
       try {
         opener.focus();
         opener.location.reload();
+        window.close();
       } catch (erro) {
         console.warn("Nao foi possivel atualizar a aba de origem:", erro);
       }
     }
 
-    window.close();
     window.setTimeout(() => {
-      window.location.href = "/index.html";
+      window.location.href = "/";
     }, 320);
   }
 

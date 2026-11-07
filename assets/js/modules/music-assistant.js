@@ -20,6 +20,8 @@
   const ITUNES_TIMEOUT_MS = 8000;
   const MUSICAI_API_URL = "/api/musicai";
   const MUSICAI_TIMEOUT_MS = 14000;
+  const PLAYLIST_REQUEST_RE = /\b(playlist|play list|lista de (musicas|faixas)|monta (uma )?(lista|selecao)|mixtape|setlist)\b/;
+  const PLAYLIST_TIMEOUT_MS = 20000;
   const RELATIONSHIP_QUESTION_RE = /\b(integrantes?|membros?|formacao|vocalistas?|cantores?|cantoras?|guitarristas?|baixistas?|bateristas?|tecladistas?|fundadores?)\b/;
   const PAGE_LABELS = {
     home: "busca",
@@ -615,11 +617,11 @@
   function getQuickPrompts(context) {
     if (context.page === "detail" && context.selectedItem) {
       const title = context.selectedItem.nome || itemTitle(context.selectedItem);
-      return [`Me fale sobre ${title}`, "Quais faixas ouvir?", "Me recomenda algo parecido"];
+      return [`Me fale sobre ${title}`, `Monte uma playlist no estilo de ${title}`, "Me recomenda algo parecido"];
     }
 
     if (context.page === "favorites" || context.page === "profile") {
-      return ["Analisa meus favoritos", "Me recomenda algo", "O que eu salvo agora?"];
+      return ["Analisa meus favoritos", "Monte uma playlist com meu gosto", "O que eu salvo agora?"];
     }
 
     if (context.page === "home") {
@@ -631,10 +633,10 @@
         ];
       }
 
-      return ["Me recomenda uma busca", "Como usar a busca?", "Pesquisar rock classico"];
+      return ["Monte uma playlist para relaxar", "O que está em alta?", "Me recomenda um álbum de MPB"];
     }
 
-    return ["O que voce faz?", "Me recomenda algo", "Como descubro musicas?"];
+    return ["Monte uma playlist com meu gosto", "Me recomenda algo", "O que você faz?"];
   }
 
   function buildCapabilities(context) {
@@ -643,6 +645,7 @@
     return [
       `Estou acompanhando o contexto desta pagina (${pageLabel}).`,
       "Posso pesquisar artistas, sugerir albuns, apontar faixas para ouvir, explicar generos e usar seus favoritos como pista.",
+      "Tambem monto playlists: peça algo como **monte uma playlist de rock nacional** e eu toco as prévias no player.",
       "Me pergunte de forma natural, tipo: me fala sobre Pink Floyd, quais albuns ouvir primeiro, ou me recomenda algo parecido."
     ].join("\n");
   }
@@ -1096,6 +1099,82 @@
     return "Me diga um artista, album, musica ou genero. Se quiser que eu acione a busca, escreva algo como: pesquisar albuns de Radiohead.";
   }
 
+  async function requestPlaylist(message, context) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), PLAYLIST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(MUSICAI_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          mode: "playlist",
+          message: truncateText(message, 600),
+          context: buildMusicAiContext(context)
+        }),
+        signal: controller.signal
+      });
+      const data = await response.json().catch(() => null);
+      return response.ok && data?.ok ? data.playlist : null;
+    } catch (error) {
+      console.info("Playlist da MusicAI indisponivel:", error);
+      return null;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+
+  // Finds each suggested track on iTunes; keeps only tracks that have a preview.
+  async function resolvePlaylistTracks(tracks) {
+    const found = await Promise.allSettled(
+      tracks.map(async (track) => {
+        const results = await searchItunes(`${track.artist} ${track.title}`, "song", 3);
+        const wantedArtist = normalizeText(track.artist);
+        return (
+          results.find((item) => item.previewUrl && normalizeText(item.artistName).includes(wantedArtist)) ||
+          results.find((item) => item.previewUrl) ||
+          null
+        );
+      })
+    );
+
+    return found.map((result) => (result.status === "fulfilled" ? result.value : null)).filter(Boolean);
+  }
+
+  async function buildPlaylistReply(message, context) {
+    setTyping(true, "Montando a playlist");
+    const playlist = await requestPlaylist(message, context);
+
+    if (!playlist?.tracks?.length) {
+      return "Não consegui montar a playlist agora. Tente de novo em instantes ou descreva o clima de outro jeito (ex.: rock nacional para dirigir).";
+    }
+
+    setTyping(true, "Procurando as prévias");
+    const playable = await resolvePlaylistTracks(playlist.tracks);
+    const lines = playable.map((item, index) => `${index + 1}. **${item.trackName}** — ${item.artistName}`);
+
+    if (!playable.length) {
+      return `Montei **${playlist.title}**, mas não achei prévias dessas faixas agora.`;
+    }
+
+    if (window.WikiPreview?.startRadio) {
+      window.WikiPreview.startRadio(playable, { label: playlist.title }).catch((error) => {
+        console.warn("Nao foi possivel tocar a playlist:", error);
+      });
+    }
+
+    return [
+      `🎧 **${playlist.title}**`,
+      playlist.description,
+      "",
+      ...lines,
+      "",
+      window.WikiPreview?.startRadio ? "Já está tocando no player. Use ⏭ para pular." : "Abra a vitrine para ouvir as prévias."
+    ]
+      .filter((line, index, all) => line || all[index - 1])
+      .join("\n");
+  }
+
   async function generateReply(message) {
     const context = getCurrentContext();
     const normalized = normalizeText(message);
@@ -1108,6 +1187,10 @@
 
     if (/\b(oi|ola|e ai|salve|bom dia|boa tarde|boa noite)\b/.test(normalized)) {
       return buildWelcomeText(context);
+    }
+
+    if (PLAYLIST_REQUEST_RE.test(normalized)) {
+      return buildPlaylistReply(message, context);
     }
 
     if (/\b(custo|gratis|gratuito|pago|paga|openai|api key|chave)\b/.test(normalized)) {
@@ -1340,6 +1423,7 @@
       return;
     }
 
+    typingRow?.remove();
     typingRow = createNode("div", "music-assistant-message is-assistant is-typing");
     const bubble = createNode("div", "music-assistant-bubble");
     const typingLabel = createNode("span", "typing-label", label);
@@ -1451,24 +1535,25 @@
     root = createNode("section", "music-assistant");
     root.setAttribute("aria-label", "MusicAI");
 
-    toggleButton = createNode("button", "music-assistant-toggle");
+    toggleButton = createNode("button", "music-assistant-toggle glass");
     toggleButton.type = "button";
     toggleButton.setAttribute("aria-expanded", "false");
     toggleButton.setAttribute("aria-controls", "musicAssistantPanel");
     toggleButton.setAttribute("aria-label", "Abrir MusicAI");
 
-    const toggleIcon = createNode("span", "music-assistant-toggle-icon", "IA");
+    const toggleIcon = createNode("span", "music-assistant-toggle-icon");
+    toggleIcon.innerHTML = window.WikibandUI?.icon("sparkle") || "IA";
     const toggleText = createNode("span", "music-assistant-toggle-text", "MusicAI");
     toggleButton.append(toggleIcon, toggleText);
 
-    panel = createNode("aside", "music-assistant-panel");
+    panel = createNode("aside", "music-assistant-panel glass");
     panel.id = "musicAssistantPanel";
     panel.setAttribute("aria-hidden", "true");
 
     const header = createNode("div", "music-assistant-header");
     const titleWrap = createNode("div");
     const title = createNode("h2", "", "MusicAI");
-    const status = createNode("p", "", "Descoberta musical em tempo real");
+    const status = createNode("p", "", "Curadoria, respostas e playlists com IA");
     const headerActions = createNode("div", "music-assistant-header-actions");
     const clearButton = createNode("button", "music-assistant-icon-btn", "Limpar");
     const closeButton = createNode("button", "music-assistant-icon-btn", "Fechar");

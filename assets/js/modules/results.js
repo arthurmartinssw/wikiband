@@ -1,5 +1,5 @@
 (function initWikibandResults(window) {
-  const PLACEHOLDER_IMAGEM = "https://via.placeholder.com/600x400?text=Sem+Imagem";
+  const PLACEHOLDER_IMAGEM = "/assets/img/placeholder.svg";
   const ENTIDADES_BUSCA = {
     album: "album",
     song: "song",

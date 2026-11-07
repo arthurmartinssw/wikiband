@@ -17,23 +17,23 @@ const RESPONSE_HEADERS_TO_SKIP = new Set([
   "content-length",
   "transfer-encoding"
 ]);
-const ALLOWED_PROXY_PATHS = new Set([
-  "health",
-  "auth/login",
-  "auth/register",
-  "auth/profile",
-  "itunes/search",
-  "itunes/lookup"
-]);
 const ALLOWED_METHODS_BY_PATH = {
   "health": new Set(["GET", "HEAD"]),
   "auth/login": new Set(["POST"]),
   "auth/register": new Set(["POST"]),
   "auth/profile": new Set(["POST"]),
+  "auth/password": new Set(["POST"]),
+  "library": new Set(["GET", "PUT"]),
   "itunes/search": new Set(["GET", "HEAD"]),
   "itunes/lookup": new Set(["GET", "HEAD"])
 };
-const MAX_PROXY_BODY_BYTES = 64 * 1024;
+const PUBLIC_PROFILE_PATH = /^users\/[a-z0-9_]{3,24}$/;
+const MAX_PROXY_BODY_BYTES = 600 * 1024;
+
+function allowedMethodsFor(path) {
+  if (PUBLIC_PROFILE_PATH.test(path)) return new Set(["GET", "HEAD"]);
+  return Object.hasOwn(ALLOWED_METHODS_BY_PATH, path) ? ALLOWED_METHODS_BY_PATH[path] : null;
+}
 
 function normalizeOrigin(origin) {
   const value = String(origin || "").trim();
@@ -99,6 +99,18 @@ function copyRequestHeaders(req) {
     headers.set(key, Array.isArray(value) ? value.join(", ") : String(value));
   });
 
+  // Vercel sets x-forwarded-for to the real client IP; the backend uses it for rate limiting.
+  const proxySecret = String(process.env.PROXY_SHARED_SECRET || "").trim();
+  const forwardedFor = req.headers?.["x-forwarded-for"];
+  const clientIp = String(Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor || "")
+    .split(",")[0]
+    .trim();
+
+  if (proxySecret && clientIp) {
+    headers.set("x-wikiband-proxy-secret", proxySecret);
+    headers.set("x-wikiband-client-ip", clientIp);
+  }
+
   return headers;
 }
 
@@ -109,13 +121,9 @@ function buildTargetUrl(req, apiOrigin) {
     .replace(/^\/+/, "")
     .replace(/\/+$/, "");
 
-  if (!ALLOWED_PROXY_PATHS.has(path)) {
-    return null;
-  }
-
   const method = String(req.method || "GET").toUpperCase();
 
-  if (!ALLOWED_METHODS_BY_PATH[path]?.has(method)) {
+  if (!allowedMethodsFor(path)?.has(method)) {
     return null;
   }
 

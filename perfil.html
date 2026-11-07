@@ -1,96 +1,127 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Perfil | Wikiband</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Perfil — Wikiband</title>
+  <meta name="description" content="Gerencie seu perfil, senha e privacidade na Wikiband." />
+  <meta name="theme-color" content="#04060c" />
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
   <link rel="stylesheet" href="/assets/css/style.css" />
+  <script src="/assets/js/core/theme.js"></script>
 </head>
 
 <body>
-  <header class="topo">
-    <div class="topo-conteudo">
-      <div>
-        <h1 class="brand-loop" aria-label="Wikiband: albums, music, artists, now.">
-          <span class="brand-fixed">Wikiband</span>
-          <span class="brand-cycle" aria-hidden="true">
-            <span>Albums.</span>
-            <span>Music.</span>
-            <span>Artists.</span>
-            <span>Now.</span>
-          </span>
-        </h1>
-        <p>Controle sua identidade na Wikiband.</p>
-      </div>
+  <header class="site-header" data-page="profile"></header>
 
-      <nav class="menu" aria-label="Menu do usuario"></nav>
-    </div>
-  </header>
-
-  <main class="profile-page">
-    <section class="painel profile-card" aria-labelledby="profileTitle">
+<main class="page">
+    <div class="page-hero">
       <div class="profile-hero">
         <div class="profile-photo-preview" id="profilePhotoPreview" aria-hidden="true">WB</div>
         <div>
-          <h2 id="profileTitle">Perfil</h2>
-          <p>Seu nome aparece nas boas-vindas. Seu nome de usuario identifica sua conta.</p>
+          <span class="eyebrow">Conta</span>
+          <h1 id="profileTitle">Seu perfil</h1>
+          <p>Seu nome aparece nas boas-vindas e no seu perfil público.</p>
         </div>
       </div>
+    </div>
 
-      <form id="profileForm" class="auth-form profile-form" action="#" method="post" novalidate>
-        <label class="auth-field" for="profilePhoto">
-          <span>Foto de perfil</span>
-          <input id="profilePhoto" type="file" accept="image/png,image/jpeg,image/webp" />
-          <small>A imagem fica salva apenas neste navegador.</small>
-        </label>
-
-        <label class="auth-field" for="profileName">
-          <span>Nome</span>
-          <input id="profileName" type="text" name="nome" autocomplete="name" maxlength="80" required />
-        </label>
-
-        <label class="auth-field" for="profileUsername">
-          <span>Nome de usuario</span>
-          <input
-            id="profileUsername"
-            type="text"
-            name="username"
-            autocomplete="username"
-            minlength="3"
-            maxlength="24"
-            pattern="[a-z0-9_]{3,24}"
-            required
-          />
-          <small>Use letras minusculas, numeros e underline.</small>
-        </label>
-
-        <label class="auth-field" for="profileEmail">
-          <span>E-mail</span>
-          <input id="profileEmail" type="email" name="email" disabled />
-        </label>
-
-        <p id="profileStatus" class="auth-feedback" role="status" aria-live="polite"></p>
-
-        <div class="profile-actions">
-          <button id="profileSubmit" class="primary-btn" type="submit">Salvar perfil</button>
-          <button id="profileRemovePhoto" class="secondary-btn" type="button">Remover foto</button>
+    <div class="profile-page">
+      <section>
+        <div class="tabs glass" role="tablist" aria-label="Configurações do perfil" data-tabs-hash>
+          <button class="tab" role="tab" id="tabPerfilBtn" aria-controls="tabPerfil" aria-selected="true">Perfil</button>
+          <button class="tab" role="tab" id="tabSegurancaBtn" aria-controls="tabSeguranca">Segurança</button>
+          <button class="tab" role="tab" id="tabPrivacidadeBtn" aria-controls="tabPrivacidade">Privacidade</button>
         </div>
-      </form>
-    </section>
 
-    <aside class="painel profile-card">
-      <h2>Seu ritmo</h2>
-      <div class="profile-stats" id="profileStats"></div>
-    </aside>
+        <div class="section painel tab-panel" role="tabpanel" id="tabPerfil" aria-labelledby="tabPerfilBtn">
+          <form id="profileForm" class="auth-form profile-form" action="#" method="post" novalidate>
+            <label class="auth-field" for="profilePhoto">
+              <span>Foto de perfil</span>
+              <input id="profilePhoto" type="file" accept="image/png,image/jpeg,image/webp" />
+              <small>A foto fica salva apenas neste navegador.</small>
+            </label>
+            <label class="auth-field" for="profileName">
+              <span>Nome</span>
+              <input id="profileName" type="text" name="nome" autocomplete="name" maxlength="80" required />
+            </label>
+            <label class="auth-field" for="profileUsername">
+              <span>Nome de usuário</span>
+              <input id="profileUsername" type="text" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[a-z0-9_]{3,24}" required />
+              <small>Letras minúsculas, números e underline.</small>
+            </label>
+            <label class="auth-field" for="profileEmail">
+              <span>E-mail</span>
+              <input id="profileEmail" type="email" name="email" disabled />
+            </label>
+            <p id="profileStatus" class="auth-feedback" role="status" aria-live="polite"></p>
+            <div class="profile-actions">
+              <button id="profileSubmit" class="primary-btn" type="submit">Salvar perfil</button>
+              <button id="profileRemovePhoto" class="secondary-btn" type="button">Remover foto</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="section painel tab-panel" role="tabpanel" id="tabSeguranca" aria-labelledby="tabSegurancaBtn" hidden>
+          <form id="passwordForm" class="auth-form" action="#" method="post" novalidate>
+            <h2>Trocar senha</h2>
+            <p class="status">Ao trocar a senha, você sai de todos os outros dispositivos.</p>
+            <label class="auth-field" for="currentPassword">
+              <span>Senha atual</span>
+              <input id="currentPassword" type="password" autocomplete="current-password" maxlength="128" required />
+            </label>
+            <label class="auth-field" for="newPassword">
+              <span>Nova senha</span>
+              <input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required />
+              <small>Mínimo de 8 caracteres, com uma letra maiúscula e um número.</small>
+            </label>
+            <label class="auth-field" for="confirmNewPassword">
+              <span>Confirmar nova senha</span>
+              <input id="confirmNewPassword" type="password" autocomplete="new-password" maxlength="72" required />
+            </label>
+            <p id="passwordStatus" class="auth-feedback" role="status" aria-live="polite"></p>
+            <div class="profile-actions">
+              <button id="passwordSubmit" class="primary-btn" type="submit">Trocar senha</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="section painel tab-panel" role="tabpanel" id="tabPrivacidade" aria-labelledby="tabPrivacidadeBtn" hidden>
+          <h2>Perfil público</h2>
+          <p class="status">Mostre seus favoritos e coleções para quem tiver o link. Seu e-mail nunca aparece.</p>
+          <div class="section switch-row">
+            <div>
+              <strong>Deixar meu perfil público</strong>
+              <p id="privacyStatus">Carregando...</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="publicProfileToggle" aria-label="Deixar meu perfil público" disabled />
+              <span></span>
+            </label>
+          </div>
+          <div class="share-link" id="publicLinkRow" hidden>
+            <label class="sr-only" for="publicLinkInput">Link do perfil público</label>
+            <input id="publicLinkInput" class="input" type="text" readonly />
+            <button class="secondary-btn" id="copyPublicLinkButton" type="button">Copiar link</button>
+            <a class="secondary-btn" id="openPublicLink" href="#">Ver</a>
+          </div>
+        </div>
+      </section>
+
+      <aside class="painel profile-card">
+        <h2>Seu ritmo</h2>
+        <div class="profile-stats" id="profileStats"></div>
+      </aside>
+    </div>
   </main>
 
+  <script src="/assets/js/core/preview-player.js"></script>
   <script src="/assets/js/modules/storage.js"></script>
-  <script src="/assets/js/modules/auth-ui.js"></script>
+  <script src="/assets/js/modules/site-chrome.js"></script>
   <script src="/assets/js/modules/music-assistant.js"></script>
   <script src="/assets/js/pages/perfil.js"></script>
   <script src="/assets/js/core/pwa.js"></script>

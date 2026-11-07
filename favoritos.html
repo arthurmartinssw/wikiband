@@ -1,94 +1,88 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Favoritos | Wikiband</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Biblioteca — Wikiband</title>
+  <meta name="description" content="Seus favoritos, coleções e sua retrospectiva musical." />
+  <meta name="theme-color" content="#04060c" />
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
   <link rel="stylesheet" href="/assets/css/style.css" />
+  <script src="/assets/js/core/theme.js"></script>
 </head>
 
 <body>
-  <header class="topo">
-    <div class="topo-conteudo">
+  <header class="site-header" data-page="library"></header>
+
+<main class="page favoritos-container">
+    <div class="page-hero">
       <div>
-        <h1 class="brand-loop" aria-label="Wikiband: albums, music, artists, now.">
-          <span class="brand-fixed">Wikiband</span>
-          <span class="brand-cycle" aria-hidden="true">
-            <span>Albums.</span>
-            <span>Music.</span>
-            <span>Artists.</span>
-            <span>Now.</span>
-          </span>
-        </h1>
-        <p>Seu espaço para acompanhar favoritos, coleções e estatísticas musicais.</p>
+        <span class="eyebrow">Sua música</span>
+        <h1>Biblioteca</h1>
+        <p id="librarySubtitle">Favoritos, coleções e estatísticas, sincronizados com a sua conta.</p>
       </div>
-
-      <nav class="menu" aria-label="Menu do usuario"></nav>
+      <div class="painel-header-actions">
+        <button class="secondary-btn" id="startFavoritesRadioButton" type="button">Rádio dos favoritos</button>
+        <button class="ghost-btn" id="stopRadioFavoritesButton" type="button">Parar rádio</button>
+      </div>
     </div>
-  </header>
 
-  <main class="favoritos-container">
-    <section class="painel" id="colecoes">
-      <div class="painel-header">
-        <h2>Painel</h2>
-        <button class="mini-btn danger" id="clearPlayHistoryButton" type="button">Limpar reproduções</button>
-      </div>
+    <div class="tabs glass" role="tablist" aria-label="Seções da biblioteca" data-tabs-hash>
+      <button class="tab" role="tab" id="tabResumoBtn" aria-controls="tabResumo" aria-selected="true">Visão geral</button>
+      <button class="tab" role="tab" id="tabColecoesBtn" aria-controls="tabColecoes">Coleções</button>
+      <button class="tab" role="tab" id="tabAlbunsBtn" aria-controls="tabAlbuns">Álbuns</button>
+      <button class="tab" role="tab" id="tabArtistasBtn" aria-controls="tabArtistas">Artistas</button>
+    </div>
 
-      <div id="dashboardGrid" class="dashboard-grid"></div>
+    <section class="section tab-panel" role="tabpanel" id="tabResumo" aria-labelledby="tabResumoBtn">
+      <div class="wrapped-card" id="wrappedCard"></div>
 
-      <div class="dashboard-lists">
-        <article class="dashboard-list">
-          <h3>Top gêneros</h3>
-          <div class="insight-list" id="topGenresList"></div>
-        </article>
-
-        <article class="dashboard-list">
-          <h3>Top artistas</h3>
-          <div class="insight-list" id="topArtistsList"></div>
-        </article>
-
-        <article class="dashboard-list">
-          <h3>Top décadas</h3>
-          <div class="insight-list" id="topDecadesList"></div>
-        </article>
-      </div>
-    </section>
-
-    <section class="painel">
-      <div class="painel-header">
-        <h2>Rádio dos favoritos</h2>
-        <div class="painel-header-actions">
-          <button class="mini-btn" id="startFavoritesRadioButton" type="button">Iniciar rádio</button>
-          <button class="mini-btn" id="stopRadioFavoritesButton" type="button">Parar rádio</button>
+      <section class="painel" id="colecoes">
+        <div class="painel-header">
+          <h2>Seus números</h2>
+          <button class="mini-btn danger" id="clearPlayHistoryButton" type="button">Limpar reproduções</button>
         </div>
-      </div>
-      <p class="status">Toque seus álbuns favoritos em sequência quando houver prévia disponível.</p>
+        <div id="dashboardGrid" class="dashboard-grid"></div>
+        <div class="dashboard-lists">
+          <article class="dashboard-list">
+            <h3>Top gêneros</h3>
+            <div class="insight-list" id="topGenresList"></div>
+          </article>
+          <article class="dashboard-list">
+            <h3>Top artistas</h3>
+            <div class="insight-list" id="topArtistsList"></div>
+          </article>
+          <article class="dashboard-list">
+            <h3>Top décadas</h3>
+            <div class="insight-list" id="topDecadesList"></div>
+          </article>
+        </div>
+      </section>
     </section>
 
-    <section class="painel">
-      <div class="painel-header">
+    <section class="section tab-panel" role="tabpanel" id="tabColecoes" aria-labelledby="tabColecoesBtn" hidden>
+      <div class="section-head">
         <h2>Coleções</h2>
-        <button class="mini-btn" id="createCollectionButton" type="button">Nova coleção</button>
+        <button class="primary-btn" id="createCollectionButton" type="button">Nova coleção</button>
       </div>
       <div class="collections-list" id="collectionsList"></div>
     </section>
 
-    <section class="painel">
-      <div class="painel-header">
+    <section class="section tab-panel" role="tabpanel" id="tabAlbuns" aria-labelledby="tabAlbunsBtn" hidden>
+      <div class="section-head">
         <h2>Álbuns favoritos</h2>
         <button class="mini-btn danger" id="clearAlbumFavoritesButton" type="button">Limpar</button>
       </div>
       <div class="favoritos-grid" id="albumFavoritesGrid"></div>
     </section>
 
-    <section class="painel">
-      <div class="painel-header">
-        <h2>Bandas favoritas</h2>
+    <section class="section tab-panel" role="tabpanel" id="tabArtistas" aria-labelledby="tabArtistasBtn" hidden>
+      <div class="section-head">
+        <h2>Artistas favoritos</h2>
         <button class="mini-btn danger" id="clearBandFavoritesPageButton" type="button">Limpar</button>
       </div>
       <div class="favoritos-grid" id="bandFavoritesGrid"></div>
@@ -97,7 +91,7 @@
 
   <script src="/assets/js/core/preview-player.js"></script>
   <script src="/assets/js/modules/storage.js"></script>
-  <script src="/assets/js/modules/auth-ui.js"></script>
+  <script src="/assets/js/modules/site-chrome.js"></script>
   <script src="/assets/js/modules/links.js"></script>
   <script src="/assets/js/modules/music-assistant.js"></script>
   <script src="/assets/js/pages/favoritos.js"></script>

@@ -18,9 +18,13 @@ function buildApiUrl(path) {
 }
 
 function montarTextoCompartilhar(banda) {
+  if (banda.tipo === "artist") {
+    return `Conheça ${banda.nome} no Wikiband. ${window.location.href}`;
+  }
+
   const foco = banda.musica
     ? `"${banda.musica}", de ${banda.nome}`
-    : `o album "${banda.album}", de ${banda.nome}`;
+    : `o álbum "${banda.album}", de ${banda.nome}`;
 
   return `Estou ouvindo ${foco} no Wikiband. ${window.location.href}`;
 }
@@ -48,7 +52,6 @@ async function copiarTexto(texto) {
 
 async function compartilharDetalhe(banda, botao) {
   const texto = montarTextoCompartilhar(banda);
-  const textoOriginal = botao.textContent;
 
   try {
     if (navigator.share) {
@@ -59,10 +62,7 @@ async function compartilharDetalhe(banda, botao) {
       });
     } else {
       await copiarTexto(texto);
-      botao.textContent = "Copiado";
-      setTimeout(() => {
-        botao.textContent = textoOriginal;
-      }, 1400);
+      window.WikibandUI?.toast("Link copiado para compartilhar");
     }
   } catch (erro) {
     console.warn("Compartilhamento cancelado ou indisponivel:", erro);
@@ -70,6 +70,11 @@ async function compartilharDetalhe(banda, botao) {
 }
 
 function adicionarEmColecao(item, onDone) {
+  if (!Storage.getCurrentSession()) {
+    onDone("Entre na sua conta para criar coleções.");
+    return;
+  }
+
   const collections = Storage.getCollections();
 
   if (!collections.length) {
@@ -358,10 +363,10 @@ async function carregarBandaSelecionada() {
 
 function renderSemSelecao() {
   detalheContainer.innerHTML = `
-    <div class="detalhe-content">
-      <h1>Nenhuma banda selecionada</h1>
-      <p>Volte para a busca e escolha um resultado para ver os detalhes.</p>
-      <a href="/index.html" class="voltar">Voltar para a busca</a>
+    <div class="detalhe-content painel">
+      <h1>Nada selecionado</h1>
+      <p>Volte para a vitrine e escolha um artista, álbum ou música.</p>
+      <a href="/" class="primary-btn">Ir para a vitrine</a>
     </div>
   `;
 }
@@ -377,86 +382,274 @@ function atualizarUrlCanonica(banda) {
   }
 }
 
+function isNumericId(value) {
+  return /^\d+$/.test(String(value || ""));
+}
+
+function textoTipo(banda) {
+  return { artist: "Artista", song: "Música", album: "Álbum" }[banda.tipo] || "Álbum";
+}
+
+function tituloPrincipal(banda) {
+  if (banda.tipo === "song") return banda.musica;
+  if (banda.tipo === "artist") return banda.nome;
+  return banda.album;
+}
+
+function criarCardDiscografia(album) {
+  const card = document.createElement("article");
+  card.className = "rail-item";
+  card.tabIndex = 0;
+  card.innerHTML = `
+    <div class="rail-art"><img src="${safeImageUrl(album.imagem)}" alt="" loading="lazy"></div>
+    <span class="rail-title"></span>
+    <span class="rail-sub"></span>
+  `;
+  card.querySelector(".rail-title").textContent = album.album;
+  card.querySelector(".rail-sub").textContent = String(album.lancamento || "");
+
+  const abrir = () => {
+    sessionStorage.setItem("bandaSelecionada", JSON.stringify(album));
+    window.location.href = Links?.buildDetailUrl(album) || "/banda.html";
+  };
+  card.addEventListener("click", abrir);
+  card.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") abrir();
+  });
+  return card;
+}
+
+async function carregarObrasDoArtista(banda) {
+  const section = document.getElementById("discographySection");
+  const rail = document.getElementById("discographyList");
+  const topSection = document.getElementById("topSongsSection");
+  const topList = document.getElementById("topSongsList");
+
+  if (!isNumericId(banda.bandaId)) {
+    section.hidden = true;
+    topSection.hidden = true;
+    return { albums: [] };
+  }
+
+  try {
+    const [albunsResp, musicasResp] = await Promise.all([
+      fetchItunes(`/itunes/lookup?id=${encodeURIComponent(banda.bandaId)}&entity=album&limit=60`),
+      banda.tipo === "artist"
+        ? fetchItunes(`/itunes/lookup?id=${encodeURIComponent(banda.bandaId)}&entity=song&limit=12`)
+        : Promise.resolve({ results: [] })
+    ]);
+
+    const albums = Results.filtrarVersoesAlternativas(
+      (albunsResp.results || [])
+        .filter((item) => item.wrapperType === "collection")
+        .map((item) => mapRawItem(item, "album"))
+        .filter((album) => String(album.albumId) !== String(banda.albumId)),
+      { mostrarAlternativas: false, searchType: "album" }
+    ).sort((a, b) => (Number(b.lancamento) || 0) - (Number(a.lancamento) || 0));
+
+    if (albums.length) {
+      rail.replaceChildren(...albums.map(criarCardDiscografia));
+      document.getElementById("discographyTitle").textContent =
+        banda.tipo === "artist" ? "Discografia" : `Mais de ${banda.nome}`;
+      section.hidden = false;
+    } else {
+      section.hidden = true;
+    }
+
+    const musicas = (musicasResp.results || []).filter((item) => item.wrapperType === "track");
+
+    if (musicas.length) {
+      const faixas = musicas.map((item, index) => ({
+        id: item.trackId,
+        nome: item.trackName,
+        artista: item.collectionName || banda.nome,
+        album: item.collectionName,
+        numero: index + 1,
+        duracaoMs: item.trackTimeMillis || 0,
+        previewUrl: item.previewUrl || "",
+        imagem: String(item.artworkUrl100 || "").replace("100x100bb", "300x300bb")
+      }));
+      topList.replaceChildren(...faixas.map((faixa) => criarLinhaFaixa(faixa, banda)));
+      document.getElementById("playTopSongsButton").onclick = () => {
+        WikiPreview.startRadio(musicas, { label: `Essenciais de ${banda.nome}` }).catch(() => {});
+      };
+      topSection.hidden = false;
+    } else {
+      topSection.hidden = true;
+    }
+
+    return { albums };
+  } catch (erro) {
+    console.warn("Nao foi possivel carregar a discografia:", erro);
+    section.hidden = true;
+    topSection.hidden = true;
+    return { albums: [] };
+  }
+}
+
+async function carregarSobreArtista(banda, albums) {
+  const card = document.getElementById("aboutCard");
+  const info = await window.WikibandArtistInfo?.getArtistInfo(banda.nome);
+
+  if (!info) {
+    card.hidden = true;
+    // Artists have no artwork on iTunes; fall back to their latest album cover.
+    if (banda.tipo === "artist" && albums[0]?.imagem) aplicarImagemHero(albums[0].imagem);
+    return;
+  }
+
+  card.querySelector(".about-text").textContent = info.extract;
+  const link = card.querySelector(".about-source");
+  link.href = safeExternalUrl(info.url);
+  link.textContent = `Leia mais na Wikipédia (${info.lang})`;
+
+  const thumb = card.querySelector(".about-thumb");
+  if (info.thumbnail && banda.tipo !== "artist") {
+    thumb.src = safeImageUrl(info.thumbnail);
+    thumb.hidden = false;
+  }
+
+  if (banda.tipo === "artist") {
+    aplicarImagemHero(info.image || albums[0]?.imagem);
+  }
+
+  card.hidden = false;
+}
+
+function aplicarImagemHero(url) {
+  const safeUrl = safeImageUrl(url);
+  document.getElementById("detailImage").src = safeUrl;
+  document.getElementById("detailHeroBg").style.backgroundImage = `url("${safeUrl.replace(/"/g, "%22")}")`;
+}
+
 function renderDetalhes(bandaSelecionada) {
+  const isArtist = bandaSelecionada.tipo === "artist";
   const previewDisponivel = Boolean(bandaSelecionada.previewUrl || bandaSelecionada.albumId);
+  const albumFav = Storage.isAlbumFavorite(bandaSelecionada.albumId);
+  const bandFav = Storage.isBandFavorite(bandaSelecionada.bandaId);
+  const artistUrl = isNumericId(bandaSelecionada.bandaId)
+    ? Links?.buildDetailUrl({ tipo: "artist", nome: bandaSelecionada.nome, bandaId: bandaSelecionada.bandaId })
+    : "";
+
+  document.title = `${tituloPrincipal(bandaSelecionada)} — Wikiband`;
 
   detalheContainer.innerHTML = `
-    <img src="${safeImageUrl(bandaSelecionada.imagem)}" class="detalhe-imagem" alt="${escapeHtml(bandaSelecionada.nome)}">
-    <div class="detalhe-content">
-      <h1>${escapeHtml(bandaSelecionada.nome)}</h1>
-      <p><strong>Gênero:</strong> ${escapeHtml(bandaSelecionada.genero)}</p>
-      <p><strong>País:</strong> ${escapeHtml(bandaSelecionada.pais)}</p>
-      <p><strong>Álbum:</strong> ${escapeHtml(bandaSelecionada.album)}</p>
-      <p><strong>Lançamento:</strong> ${escapeHtml(bandaSelecionada.lancamento)}</p>
+    <section class="detail-hero${isArtist ? " is-artist" : ""}">
+      <div class="detail-hero-bg" id="detailHeroBg"></div>
+      <img src="${safeImageUrl(bandaSelecionada.imagem)}" class="detalhe-imagem" id="detailImage" alt="">
+      <div>
+        <span class="eyebrow">${escapeHtml(textoTipo(bandaSelecionada))}</span>
+        <h1>${escapeHtml(tituloPrincipal(bandaSelecionada))}</h1>
+        ${isArtist ? "" : `<p class="detail-sub">${artistUrl ? `<a href="${escapeHtml(artistUrl)}">${escapeHtml(bandaSelecionada.nome)}</a>` : escapeHtml(bandaSelecionada.nome)}${bandaSelecionada.tipo === "song" ? ` · ${escapeHtml(bandaSelecionada.album)}` : ""}</p>`}
+        <div class="detail-meta">
+          <span class="chip">${escapeHtml(bandaSelecionada.genero)}</span>
+          ${/^\d{4}$/.test(String(bandaSelecionada.lancamento)) ? `<span class="chip">${escapeHtml(bandaSelecionada.lancamento)}</span>` : ""}
+        </div>
 
-      <div class="links-externos">
-        <button class="link-externo" id="detailPreviewButton" type="button" ${previewDisponivel ? "" : "disabled"}>
-          ${previewDisponivel ? "Tocar prévia" : "Prévia indisponível"}
-        </button>
-        <button class="link-externo" id="addDetailToCollectionButton" type="button">
-          Adicionar à coleção
-        </button>
-        <button class="link-externo" id="shareDetailButton" type="button">
-          Compartilhar
-        </button>
-        <a class="link-externo" href="${safeExternalUrl(bandaSelecionada.spotifyLink)}" target="_blank" rel="noopener noreferrer">
-          Spotify
-        </a>
-        <a class="link-externo" href="${safeExternalUrl(bandaSelecionada.youtubeLink)}" target="_blank" rel="noopener noreferrer">
-          YouTube
-        </a>
+        <div class="links-externos">
+          ${isArtist ? "" : `<button class="primary-btn" id="detailPreviewButton" type="button" ${previewDisponivel ? "" : "disabled"}>${previewDisponivel ? "Tocar prévia" : "Prévia indisponível"}</button>`}
+          ${bandaSelecionada.albumId && !isArtist ? `<button class="secondary-btn${albumFav ? " active" : ""}" id="favoriteAlbumButton" type="button">${albumFav ? "Álbum favoritado" : "Favoritar álbum"}</button>` : ""}
+          <button class="secondary-btn${bandFav ? " active" : ""}" id="favoriteArtistButton" type="button">${bandFav ? "Artista favoritado" : "Favoritar artista"}</button>
+          <button class="secondary-btn" id="addDetailToCollectionButton" type="button">Adicionar à coleção</button>
+          <button class="secondary-btn" id="shareDetailButton" type="button">Compartilhar</button>
+          <a class="link-externo" href="${safeExternalUrl(bandaSelecionada.spotifyLink)}" target="_blank" rel="noopener noreferrer">Spotify</a>
+          <a class="link-externo" href="${safeExternalUrl(bandaSelecionada.youtubeLink)}" target="_blank" rel="noopener noreferrer">YouTube</a>
+        </div>
+        <div class="preview-area" id="detailPreviewArea" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <div class="detail-grid">
+      <div class="detail-main">
+        <section class="painel tracks-section" id="topSongsSection" hidden>
+          <div class="tracks-header">
+            <h2>Músicas populares</h2>
+            <button class="mini-btn" id="playTopSongsButton" type="button">Tocar todas</button>
+          </div>
+          <div class="tracks-list" id="topSongsList"></div>
+        </section>
+
+        <section class="painel tracks-section" id="albumTracksSection" ${bandaSelecionada.albumId && !isArtist ? "" : "hidden"}>
+          <div class="tracks-header">
+            <h2>Faixas do álbum</h2>
+            <span id="trackCount"></span>
+          </div>
+          <div class="tracks-list" id="trackList"></div>
+        </section>
+
+        <section class="section" id="discographySection" hidden>
+          <div class="section-head"><h2 id="discographyTitle">Discografia</h2></div>
+          <div class="rail" id="discographyList"></div>
+        </section>
       </div>
 
-      <div class="preview-area" id="detailPreviewArea" aria-live="polite"></div>
+      <aside class="detail-aside">
+        <section class="painel about-card" id="aboutCard" hidden>
+          <h2>Sobre ${escapeHtml(bandaSelecionada.nome)}</h2>
+          <img class="about-thumb" alt="" hidden>
+          <p class="about-text"></p>
+          <a class="about-source" target="_blank" rel="noopener noreferrer"></a>
+        </section>
 
-      <section class="tracks-section">
-        <div class="tracks-header">
-          <h2>Faixas do álbum</h2>
-          <span id="trackCount"></span>
-        </div>
-        <div class="tracks-list" id="trackList"></div>
-      </section>
-
-      <section class="participants-section" id="participantsSection" hidden>
-        <div class="tracks-header">
-          <div>
-            <h2 id="participantsTitle">Participantes</h2>
-            <p id="participantsNote"></p>
+        <section class="painel participants-section" id="participantsSection" hidden>
+          <div class="tracks-header">
+            <div>
+              <h2 id="participantsTitle">Integrantes</h2>
+              <p id="participantsNote"></p>
+            </div>
           </div>
-        </div>
-        <div class="participants-list" id="participantsList"></div>
-      </section>
-
-      <a href="/index.html" class="voltar">Voltar para a busca</a>
+          <div class="participants-list" id="participantsList"></div>
+        </section>
+      </aside>
     </div>
   `;
 
+  aplicarImagemHero(bandaSelecionada.imagem);
+
   const previewBtn = document.getElementById("detailPreviewButton");
   const previewArea = document.getElementById("detailPreviewArea");
-  const shareBtn = document.getElementById("shareDetailButton");
-  const addCollectionBtn = document.getElementById("addDetailToCollectionButton");
+  const say = (mensagem) => {
+    previewArea.innerHTML = `<p class="preview-status">${escapeHtml(mensagem)}</p>`;
+  };
 
-  previewBtn.dataset.previewIdleText = "Tocar prévia";
-  previewBtn.dataset.previewPlayingText = "Pausar prévia";
+  if (previewBtn) {
+    previewBtn.dataset.previewIdleText = "Tocar prévia";
+    previewBtn.dataset.previewPlayingText = "Pausar prévia";
 
-  if (previewDisponivel) {
-    previewBtn.addEventListener("click", () => {
-      tocarPrimeiraPreview(bandaSelecionada, previewBtn, previewArea);
-    });
+    if (previewDisponivel) {
+      previewBtn.addEventListener("click", () => {
+        tocarPrimeiraPreview(bandaSelecionada, previewBtn, previewArea);
+      });
+    }
   }
 
-  addCollectionBtn.addEventListener("click", () => {
-    adicionarEmColecao(bandaSelecionada, (mensagem) => {
-      previewArea.innerHTML = `<p class="preview-status">${escapeHtml(mensagem)}</p>`;
-    });
+  document.getElementById("favoriteAlbumButton")?.addEventListener("click", (event) => {
+    Storage.toggleAlbumFavorite(bandaSelecionada);
+    const ativo = Storage.isAlbumFavorite(bandaSelecionada.albumId);
+    event.currentTarget.classList.toggle("active", ativo);
+    event.currentTarget.textContent = ativo ? "Álbum favoritado" : "Favoritar álbum";
+    if (!Storage.getCurrentSession()) window.WikibandUI?.toast("Entre na sua conta para salvar favoritos.");
   });
 
-  shareBtn.addEventListener("click", () => {
-    compartilharDetalhe(bandaSelecionada, shareBtn);
+  document.getElementById("favoriteArtistButton").addEventListener("click", (event) => {
+    Storage.toggleBandFavorite(bandaSelecionada);
+    const ativo = Storage.isBandFavorite(bandaSelecionada.bandaId);
+    event.currentTarget.classList.toggle("active", ativo);
+    event.currentTarget.textContent = ativo ? "Artista favoritado" : "Favoritar artista";
+    if (!Storage.getCurrentSession()) window.WikibandUI?.toast("Entre na sua conta para salvar favoritos.");
   });
 
-  carregarFaixasAlbum(bandaSelecionada);
+  document.getElementById("addDetailToCollectionButton").addEventListener("click", () => {
+    adicionarEmColecao(bandaSelecionada, say);
+  });
+
+  document.getElementById("shareDetailButton").addEventListener("click", (event) => {
+    compartilharDetalhe(bandaSelecionada, event.currentTarget);
+  });
+
+  if (bandaSelecionada.albumId && !isArtist) carregarFaixasAlbum(bandaSelecionada);
   renderParticipantes(bandaSelecionada);
+  carregarObrasDoArtista(bandaSelecionada).then(({ albums }) => carregarSobreArtista(bandaSelecionada, albums));
 }
 
 (async () => {

@@ -72,10 +72,10 @@
     const totals = dashboard?.totals || {};
     const stats = [
       ["Buscas", totals.searches || 0],
-      ["Albuns favoritos", totals.albumFavorites || 0],
-      ["Bandas favoritas", totals.bandFavorites || 0],
-      ["Colecoes", totals.collections || 0],
-      ["Reproducoes", totals.plays || 0]
+      ["Álbuns favoritos", totals.albumFavorites || 0],
+      ["Artistas favoritos", totals.bandFavorites || 0],
+      ["Coleções", totals.collections || 0],
+      ["Reproduções", totals.plays || 0]
     ];
 
     statsElement.replaceChildren(
@@ -216,4 +216,103 @@
       submitButton.disabled = false;
     }
   });
+
+  // ---------- Security: change password ----------
+
+  const passwordForm = document.getElementById("passwordForm");
+  const passwordStatus = document.getElementById("passwordStatus");
+  const passwordSubmit = document.getElementById("passwordSubmit");
+
+  function setPasswordFeedback(message, type) {
+    passwordStatus.textContent = message;
+    passwordStatus.classList.toggle("is-error", type === "error");
+    passwordStatus.classList.toggle("is-success", type === "success");
+  }
+
+  passwordForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const senhaAtual = document.getElementById("currentPassword").value;
+    const novaSenha = document.getElementById("newPassword").value;
+    const confirmacao = document.getElementById("confirmNewPassword").value;
+
+    if (!senhaAtual || !novaSenha) {
+      setPasswordFeedback("Preencha a senha atual e a nova senha.", "error");
+      return;
+    }
+
+    if (novaSenha !== confirmacao) {
+      setPasswordFeedback("A confirmação não confere com a nova senha.", "error");
+      return;
+    }
+
+    passwordSubmit.disabled = true;
+    setPasswordFeedback("Trocando senha...", "success");
+
+    try {
+      const result = await Storage.changePassword({ senhaAtual, novaSenha });
+      setPasswordFeedback(result.message, result.ok ? "success" : "error");
+      if (result.ok) passwordForm.reset();
+    } finally {
+      passwordSubmit.disabled = false;
+    }
+  });
+
+  // ---------- Privacy: public profile ----------
+
+  const publicToggle = document.getElementById("publicProfileToggle");
+  const privacyStatus = document.getElementById("privacyStatus");
+  const publicLinkRow = document.getElementById("publicLinkRow");
+  const publicLinkInput = document.getElementById("publicLinkInput");
+
+  function publicProfileUrl() {
+    const username = Storage.getCurrentSession()?.username || "";
+    return new URL(`/usuario.html?u=${encodeURIComponent(username)}`, window.location.origin).toString();
+  }
+
+  function renderPrivacy(publico) {
+    publicToggle.checked = publico;
+    privacyStatus.textContent = publico
+      ? "Qualquer pessoa com o link pode ver seus favoritos e coleções."
+      : "Só você vê sua biblioteca.";
+    publicLinkRow.hidden = !publico;
+    publicLinkInput.value = publicProfileUrl();
+    document.getElementById("openPublicLink").href = publicProfileUrl();
+  }
+
+  Storage.getLibraryPrivacy?.().then((result) => {
+    if (!result?.ok) {
+      privacyStatus.textContent = "Perfil público indisponível no momento.";
+      return;
+    }
+
+    publicToggle.disabled = false;
+    renderPrivacy(result.publico);
+  });
+
+  publicToggle?.addEventListener("change", async () => {
+    publicToggle.disabled = true;
+    const result = await Storage.setLibraryPrivacy(publicToggle.checked);
+    publicToggle.disabled = false;
+
+    if (!result.ok) {
+      publicToggle.checked = !publicToggle.checked;
+      window.WikibandUI?.toast(result.message || "Não foi possível salvar.");
+      return;
+    }
+
+    renderPrivacy(result.publico);
+    window.WikibandUI?.toast(result.publico ? "Seu perfil agora é público" : "Seu perfil agora é privado");
+  });
+
+  document.getElementById("copyPublicLinkButton")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(publicLinkInput.value);
+      window.WikibandUI?.toast("Link copiado");
+    } catch (error) {
+      publicLinkInput.select();
+    }
+  });
+
+  document.addEventListener("wikiband:library-synced", renderStats);
 })(window, document);

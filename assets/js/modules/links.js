@@ -57,7 +57,7 @@
     if (item?.bandaId) params.set("artistId", String(item.bandaId));
 
     if (item?.nome) params.set("artist", item.nome);
-    if (item?.album) params.set("album", item.album);
+    if (item?.album && type !== "artist") params.set("album", item.album);
     if (item?.musica) params.set("song", item.musica);
 
     const relative = `/banda.html?${params.toString()}`;

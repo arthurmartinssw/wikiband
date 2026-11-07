@@ -1,48 +1,77 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sobre | Wikiband</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Sobre — Wikiband</title>
+  <meta name="description" content="O que é a Wikiband, como seus dados são tratados e termos de uso." />
+  <meta name="theme-color" content="#04060c" />
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
   <link rel="stylesheet" href="/assets/css/style.css" />
+  <script src="/assets/js/core/theme.js"></script>
 </head>
 
 <body>
-  <header class="topo">
-    <div class="topo-conteudo">
-      <div>
-        <h1 class="brand-loop" aria-label="Wikiband: albums, music, artists, now.">
-          <span class="brand-fixed">Wikiband</span>
-          <span class="brand-cycle" aria-hidden="true">
-            <span>Albums.</span>
-            <span>Music.</span>
-            <span>Artists.</span>
-            <span>Now.</span>
-          </span>
-        </h1>
-        <p>Descubra música, organize favoritos e explore artistas com contexto.</p>
+  <header class="site-header" data-page="about"></header>
+
+<main class="page">
+    <div class="prose">
+      <div class="page-hero">
+        <div>
+          <span class="eyebrow">Sobre</span>
+          <h1>Uma vitrine para conhecer música</h1>
+          <p>A Wikiband reúne artistas, álbuns e músicas reais em um só lugar, com prévias, biografias e uma assistente musical.</p>
+        </div>
       </div>
 
-      <nav class="menu" aria-label="Menu do usuario"></nav>
-    </div>
-  </header>
+      <section class="painel">
+        <h2>O que dá para fazer</h2>
+        <div class="feature-grid">
+          <div class="feature"><strong>Descobrir</strong><p>Veja o que está em alta no Brasil e explore por gênero, década e país.</p></div>
+          <div class="feature"><strong>Conhecer artistas</strong><p>Biografia, músicas populares e discografia completa de cada artista.</p></div>
+          <div class="feature"><strong>Ouvir prévias</strong><p>Toque trechos de 30 segundos, monte rádios e playlists sem sair da página.</p></div>
+          <div class="feature"><strong>Guardar</strong><p>Favoritos e coleções sincronizados com a sua conta, com perfil público opcional.</p></div>
+          <div class="feature"><strong>MusicAI</strong><p>Peça recomendações, tire dúvidas e gere playlists com inteligência artificial.</p></div>
+          <div class="feature"><strong>Retrospectiva</strong><p>Seus artistas, gêneros e décadas favoritos em um resumo para compartilhar.</p></div>
+        </div>
+      </section>
 
-  <main class="pagina-sobre">
-    <section class="painel sobre-box">
-      <h2>Sobre a Wikiband</h2>
-      <p>A Wikiband é uma plataforma para explorar o universo da música de forma inteligente.
-        Utilizando dados reais de APIs públicas e um backend próprio, o sistema permite buscar artistas, álbuns e
-        músicas com contexto, organização e personalização.</p>
-    </section>
+      <section class="painel" id="privacidade">
+        <h2>Privacidade</h2>
+        <ul>
+          <li>Guardamos apenas nome, nome de usuário, e-mail e a senha com hash (bcrypt). A senha nunca é armazenada em texto.</li>
+          <li>Favoritos, coleções, histórico de buscas e reproduções ficam na sua conta para sincronizar entre dispositivos.</li>
+          <li>Seu perfil é privado por padrão. Se você ativar o perfil público, apenas nome, nome de usuário, favoritos e coleções ficam visíveis. O e-mail nunca é exibido.</li>
+          <li>A foto de perfil fica somente no seu navegador.</li>
+          <li>Mensagens enviadas à MusicAI são repassadas ao provedor de IA para gerar a resposta, junto com um resumo do que está na tela. Não envie dados pessoais no chat.</li>
+          <li>Não usamos cookies de rastreamento nem vendemos dados.</li>
+        </ul>
+      </section>
+
+      <section class="painel" id="termos">
+        <h2>Termos de uso</h2>
+        <ul>
+          <li>A Wikiband é um projeto independente, sem vínculo com Apple, Spotify, YouTube ou Wikipédia.</li>
+          <li>Capas, prévias e metadados pertencem aos seus titulares e são exibidos via a API pública do iTunes. Biografias vêm da Wikipédia (CC BY-SA).</li>
+          <li>As respostas da MusicAI podem conter erros. Confira informações importantes em fontes oficiais.</li>
+          <li>Não use o site para automatizar buscas em massa, burlar limites ou publicar conteúdo ofensivo em coleções públicas.</li>
+        </ul>
+      </section>
+
+      <div class="sobre-acoes">
+        <a href="/" class="primary-btn">Explorar a vitrine</a>
+        <a href="/cadastro.html" class="secondary-btn">Criar conta</a>
+      </div>
+    </div>
   </main>
 
+  <script src="/assets/js/core/preview-player.js"></script>
   <script src="/assets/js/modules/storage.js"></script>
-  <script src="/assets/js/modules/auth-ui.js"></script>
+  <script src="/assets/js/modules/site-chrome.js"></script>
   <script src="/assets/js/modules/music-assistant.js"></script>
   <script src="/assets/js/core/pwa.js"></script>
 </body>

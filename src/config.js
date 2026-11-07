@@ -102,6 +102,7 @@ module.exports = {
   security: {
     isProduction,
     sessionSecret: readSessionSecret(isProduction),
+    proxySecret: readEnv("PROXY_SHARED_SECRET"),
     sessionMaxAgeMs: readIntegerEnv("SESSION_MAX_AGE_MS", 1000 * 60 * 60 * 24 * 7),
     corsOrigins: readOriginList()
   }

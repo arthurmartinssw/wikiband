@@ -1,168 +1,171 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wikiband</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Wikiband — vitrine de música</title>
+  <meta name="description" content="Descubra artistas, álbuns e músicas, ouça prévias, veja o que está em alta no Brasil e monte sua biblioteca." />
+  <meta name="theme-color" content="#04060c" />
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
   <link rel="stylesheet" href="/assets/css/style.css" />
+  <script src="/assets/js/core/theme.js"></script>
 </head>
 
 <body>
-  <header class="topo">
-    <div class="topo-conteudo">
-      <div>
-        <h1 class="brand-loop" aria-label="Wikiband: albums, music, artists, now.">
-          <span class="brand-fixed">Wikiband</span>
-          <span class="brand-cycle" aria-hidden="true">
-            <span>Albums.</span>
-            <span>Music.</span>
-            <span>Artists.</span>
-            <span>Now.</span>
-          </span>
-        </h1>
-        <p>Pesquise bandas e artistas reais, salve favoritos e explore novos sons.</p>
-      </div>
+  <header class="site-header" data-page="home"></header>
 
-      <nav class="menu" aria-label="Menu do usuario"></nav>
-    </div>
-  </header>
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Vitrine musical</span>
+      <h1><span class="gradient-text">Conheça artistas.</span> Ouça o que vem a seguir.</h1>
+      <p>Pesquise bandas, álbuns e músicas reais, ouça prévias e descubra o que está em alta no Brasil.</p>
 
-  <section class="search-section">
-    <div class="search-modes" aria-label="Tipo de busca">
-      <button class="mode-btn active" type="button" data-search-type="album">Álbuns</button>
-      <button class="mode-btn" type="button" data-search-type="song">Músicas</button>
-      <button class="mode-btn" type="button" data-search-type="artist">Artistas</button>
-    </div>
+      <div class="search-card glass">
+        <div class="tabs search-modes" aria-label="Tipo de busca">
+          <button class="mode-btn active" type="button" data-search-type="album">Álbuns</button>
+          <button class="mode-btn" type="button" data-search-type="song">Músicas</button>
+          <button class="mode-btn" type="button" data-search-type="artist">Artistas</button>
+        </div>
 
-    <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Digite o nome de uma banda ou artista..." autocomplete="off" />
-      <button id="searchButton">Pesquisar</button>
-    </div>
-
-    <div class="filters-row">
-      <select id="genreFilter">
-        <option value="todos">Todos os gêneros</option>
-      </select>
-
-      <select id="countryFilter">
-        <option value="todos">Todos os países</option>
-      </select>
-
-      <select id="decadeFilter">
-        <option value="todos">Todas as décadas</option>
-      </select>
-
-      <select id="sortSelect">
-        <option value="relevance">Relevância</option>
-        <option value="recent">Mais recentes</option>
-        <option value="oldest">Mais antigos</option>
-        <option value="az">A-Z</option>
-        <option value="za">Z-A</option>
-      </select>
-
-      <label class="toggle-filter">
-        <input type="checkbox" id="showAlternativesToggle" />
-        <span>Mostrar versões alternativas</span>
-      </label>
-    </div>
-
-    <p class="status" id="status">Pesquise algo para começar.</p>
-  </section>
-
-  <main class="container">
-    <section class="painel results-panel">
-      <div class="painel-header">
-        <h2>Resultados</h2>
-        <div class="painel-header-actions">
-          <button class="mini-btn" id="startRadioResultsButton">Rádio dos resultados</button>
-          <button class="mini-btn" id="stopRadioButton">Parar rádio</button>
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <label class="sr-only" for="searchInput">Buscar</label>
+          <input type="search" id="searchInput" placeholder="Digite o nome de uma banda ou artista..." autocomplete="off" maxlength="200" />
+          <button id="searchButton" class="primary-btn" type="button">Pesquisar</button>
         </div>
       </div>
-      <div class="bands-grid" id="bandsGrid"></div>
+
+      <div class="quick-chips" id="quickChips" aria-label="Sugestões rápidas"></div>
     </section>
 
-    <div id="footerNav" class="footer-nav">
-      <div class="footer-nav-content">
-        <div class="footer-nav-brand">
-          <strong>Wikiband</strong>
-          <span>Continue explorando música, favoritos e novas descobertas.</span>
+    <div class="showcase" id="showcase">
+      <section class="section" id="em-alta" aria-labelledby="chartSongsTitle">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Apple Music · Brasil</span>
+            <h2 id="chartSongsTitle">Em alta no Brasil</h2>
+          </div>
+          <button class="secondary-btn" id="playChartsButton" type="button">Tocar o ranking</button>
         </div>
-        <div class="footer-nav-section">
-          <h3>Site</h3>
-          <div class="footer-nav-links">
-            <a href="/sobre.html">Sobre</a>
-            <a href="/favoritos.html">Favoritos</a>
+        <div class="rail" id="chartSongs" aria-live="polite"></div>
+      </section>
+
+      <section class="section" aria-labelledby="chartAlbumsTitle">
+        <div class="section-head">
+          <div>
+            <h2 id="chartAlbumsTitle">Álbuns mais ouvidos</h2>
+            <p>Os discos que o Brasil está ouvindo agora.</p>
           </div>
         </div>
-        <div class="footer-nav-section">
-          <h3>Legal</h3>
-          <div class="footer-nav-links">
-            <a href="/sobre.html#privacidade">Privacidade</a>
-            <a href="/sobre.html#termos">Termos de Uso</a>
-          </div>
+        <div class="rail" id="chartAlbums"></div>
+      </section>
+
+      <section class="section" aria-labelledby="genresTitle">
+        <div class="section-head">
+          <h2 id="genresTitle">Explore por gênero</h2>
         </div>
-      </div>
+        <div class="genre-grid" id="genreGrid"></div>
+      </section>
     </div>
 
-    <aside class="sidebar">
-      <section class="painel">
-        <div class="painel-header">
-          <h2>Descobrir</h2>
-          <button class="mini-btn" id="refreshDiscoveryButton">Atualizar</button>
-        </div>
-
-        <div class="discovery-panel" id="discoveryPanel">
-          <div class="discovery-block">
-            <h3>Gêneros</h3>
-            <div class="chip-list" id="discoverGenres"></div>
+    <section class="section explore" id="explorar">
+      <div class="explore-main">
+        <div class="section-head">
+          <div>
+            <h2 id="resultsTitle">Explorar</h2>
+            <p class="status" id="status">Pesquise algo para começar.</p>
           </div>
-
-          <div class="discovery-block">
-            <h3>Países</h3>
-            <div class="chip-list" id="discoverCountries"></div>
-          </div>
-
-          <div class="discovery-block">
-            <h3>Décadas</h3>
-            <div class="chip-list" id="discoverDecades"></div>
+          <div class="painel-header-actions">
+            <button class="mini-btn" id="startRadioResultsButton" type="button">Rádio dos resultados</button>
+            <button class="mini-btn" id="stopRadioButton" type="button">Parar rádio</button>
           </div>
         </div>
-      </section>
 
-      <section class="painel">
-        <div class="painel-header">
-          <h2>Histórico</h2>
-          <button class="mini-btn danger" id="clearHistoryButton">Limpar</button>
+        <div class="filters-row">
+          <label class="sr-only" for="genreFilter">Gênero</label>
+          <select id="genreFilter">
+            <option value="todos">Todos os gêneros</option>
+          </select>
+          <label class="sr-only" for="countryFilter">País</label>
+          <select id="countryFilter">
+            <option value="todos">Todos os países</option>
+          </select>
+          <label class="sr-only" for="decadeFilter">Década</label>
+          <select id="decadeFilter">
+            <option value="todos">Todas as décadas</option>
+          </select>
+          <label class="sr-only" for="sortSelect">Ordenar</label>
+          <select id="sortSelect">
+            <option value="relevance">Relevância</option>
+            <option value="recent">Mais recentes</option>
+            <option value="oldest">Mais antigos</option>
+            <option value="az">A-Z</option>
+            <option value="za">Z-A</option>
+          </select>
+          <label class="toggle-filter">
+            <input type="checkbox" id="showAlternativesToggle" />
+            <span>Versões alternativas</span>
+          </label>
         </div>
-        <div id="historyList" class="lista-lateral"></div>
-      </section>
 
-      <section class="painel">
-        <div class="painel-header">
-          <h2>&Aacute;lbuns favoritos</h2>
-          <button class="mini-btn danger" id="clearFavoritesButton">Limpar</button>
-        </div>
-        <div id="favoritesList" class="lista-lateral"></div>
-      </section>
+        <div class="bands-grid" id="bandsGrid"></div>
+      </div>
 
-      <section class="painel">
-        <div class="painel-header">
-          <h2>Bandas favoritas</h2>
-          <button class="mini-btn danger" id="clearBandFavoritesButton">Limpar</button>
-        </div>
-        <div id="bandFavoritesList" class="lista-lateral"></div>
-      </section>
-    </aside>
+      <aside class="sidebar">
+        <section class="painel">
+          <div class="tabs" role="tablist" aria-label="Painel lateral">
+            <button class="tab" role="tab" id="tabDescobrirBtn" aria-controls="tabDescobrir" aria-selected="true">Descobrir</button>
+            <button class="tab" role="tab" id="tabHistoricoBtn" aria-controls="tabHistorico">Histórico</button>
+            <button class="tab" role="tab" id="tabFavoritosBtn" aria-controls="tabFavoritos">Favoritos</button>
+          </div>
+
+          <div class="tab-panel" role="tabpanel" id="tabDescobrir" aria-labelledby="tabDescobrirBtn">
+            <div class="discovery-panel" id="discoveryPanel">
+              <div class="discovery-block">
+                <h3>Gêneros</h3>
+                <div class="chip-list" id="discoverGenres"></div>
+              </div>
+              <div class="discovery-block">
+                <h3>Países</h3>
+                <div class="chip-list" id="discoverCountries"></div>
+              </div>
+              <div class="discovery-block">
+                <h3>Décadas</h3>
+                <div class="chip-list" id="discoverDecades"></div>
+              </div>
+            </div>
+            <button class="mini-btn" id="refreshDiscoveryButton" type="button">Atualizar sugestões</button>
+          </div>
+
+          <div class="tab-panel" role="tabpanel" id="tabHistorico" aria-labelledby="tabHistoricoBtn" hidden>
+            <div class="sidebar-block">
+              <h3>Buscas recentes <button class="mini-btn danger" id="clearHistoryButton" type="button">Limpar</button></h3>
+              <div id="historyList" class="lista-lateral"></div>
+            </div>
+          </div>
+
+          <div class="tab-panel" role="tabpanel" id="tabFavoritos" aria-labelledby="tabFavoritosBtn" hidden>
+            <div class="sidebar-block">
+              <h3>Álbuns <button class="mini-btn danger" id="clearFavoritesButton" type="button">Limpar</button></h3>
+              <div id="favoritesList" class="lista-lateral"></div>
+            </div>
+            <div class="sidebar-block">
+              <h3>Artistas <button class="mini-btn danger" id="clearBandFavoritesButton" type="button">Limpar</button></h3>
+              <div id="bandFavoritesList" class="lista-lateral"></div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </section>
   </main>
 
   <script src="/assets/js/core/preview-player.js"></script>
   <script src="/assets/js/modules/storage.js"></script>
-  <script src="/assets/js/modules/auth-ui.js"></script>
+  <script src="/assets/js/modules/site-chrome.js"></script>
   <script src="/assets/js/modules/results.js"></script>
   <script src="/assets/js/modules/links.js"></script>
   <script src="/assets/js/modules/share.js"></script>

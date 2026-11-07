@@ -1,37 +1,27 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Criar conta | Wikiband</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Criar conta — Wikiband</title>
+  <meta name="description" content="Crie sua conta na Wikiband." />
+  <meta name="theme-color" content="#04060c" />
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
   <link rel="stylesheet" href="/assets/css/style.css" />
+  <script src="/assets/js/core/theme.js"></script>
 </head>
 
 <body>
-  <header class="topo topo-menor auth-topo">
-    <div class="topo-conteudo auth-topo-conteudo">
-      <a href="/index.html" class="auth-brand brand-loop" aria-label="Wikiband: albums, music, artists, now.">
-        <span class="brand-fixed">Wikiband</span>
-        <span class="brand-cycle" aria-hidden="true">
-          <span>Albums.</span>
-          <span>Music.</span>
-          <span>Artists.</span>
-          <span>Now.</span>
-        </span>
-      </a>
-      <p>Crie sua conta e mantenha seus favoritos sincronizados.</p>
-    </div>
-  </header>
+  <header class="site-header" data-page="signup"></header>
 
-  <main class="auth-page">
-    <section class="painel auth-card" aria-labelledby="signupTitle">
+<main class="auth-page">
+    <section class="auth-card glass" aria-labelledby="signupTitle">
       <h1 id="signupTitle">Criar conta</h1>
-      <p class="auth-subtitle">Preencha os dados para comecar.</p>
+      <p class="auth-subtitle">Crie sua conta para salvar favoritos e coleções em qualquer dispositivo.</p>
 
       <form id="cadastroForm" class="auth-form" action="#" method="post" novalidate>
         <label class="auth-field" for="signupName">
@@ -41,10 +31,10 @@
         </label>
 
         <label class="auth-field" for="signupUsername">
-          <span>Nome de usuario</span>
+          <span>Nome de usuário</span>
           <input id="signupUsername" type="text" name="username" placeholder="arthurmartinssw" autocomplete="username"
             minlength="3" maxlength="24" pattern="[a-z0-9_]{3,24}" required />
-          <small>Use letras minusculas, numeros e underline.</small>
+          <small>Letras minúsculas, números e underline.</small>
         </label>
 
         <label class="auth-field" for="signupEmail">
@@ -55,14 +45,14 @@
 
         <label class="auth-field" for="signupPassword">
           <span>Senha</span>
-          <input id="signupPassword" type="password" name="senha" placeholder="********" autocomplete="new-password"
-            maxlength="128" required />
-          <small>Minimo 8 caracteres, uma maiuscula e um numero.</small>
+          <input id="signupPassword" type="password" name="senha" placeholder="••••••••" autocomplete="new-password"
+            maxlength="72" required />
+          <small>Mínimo de 8 caracteres, com uma letra maiúscula e um número.</small>
         </label>
 
         <label class="auth-field" for="signupConfirmPassword">
           <span>Confirmar senha</span>
-          <input id="signupConfirmPassword" type="password" name="confirmarSenha" placeholder="********"
+          <input id="signupConfirmPassword" type="password" name="confirmarSenha" placeholder="••••••••"
             autocomplete="new-password" maxlength="128" required />
         </label>
 
@@ -71,14 +61,16 @@
         <button id="cadastroSubmit" class="primary-btn" type="submit">Criar conta</button>
 
         <p class="sign-up">
-          Ja tem conta?
+          Já tem conta?
           <a href="/login.html" class="create-account-link">Entrar</a>
         </p>
       </form>
     </section>
   </main>
 
+  <script src="/assets/js/core/preview-player.js"></script>
   <script src="/assets/js/modules/storage.js"></script>
+  <script src="/assets/js/modules/site-chrome.js"></script>
   <script src="/assets/js/modules/music-assistant.js"></script>
   <script src="/assets/js/pages/cadastro.js"></script>
   <script src="/assets/js/core/pwa.js"></script>

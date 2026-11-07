@@ -1,12 +1,12 @@
 {
   "name": "Wikiband",
   "short_name": "Wikiband",
-  "description": "Pesquise bandas e artistas, toque prévias, salve favoritos e explore coleções.",
+  "description": "Vitrine de música: conheça artistas, ouça prévias, veja o que está em alta e monte sua biblioteca.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#111312",
-  "theme_color": "#111312",
+  "background_color": "#04060c",
+  "theme_color": "#04060c",
   "icons": [
     {
       "src": "/assets/icons/android-chrome-192x192.png",

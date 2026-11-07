@@ -11,6 +11,7 @@ const topDecadesList = document.getElementById("topDecadesList");
 const clearPlayHistoryButton = document.getElementById("clearPlayHistoryButton");
 const createCollectionButton = document.getElementById("createCollectionButton");
 const collectionsList = document.getElementById("collectionsList");
+const wrappedCard = document.getElementById("wrappedCard");
 
 const Storage = window.WikibandStorage;
 const Links = window.WikibandLinks;
@@ -203,7 +204,7 @@ function renderBandFavorites() {
   const favorites = Storage.getBandFavorites();
 
   if (!favorites.length) {
-    bandFavoritesGrid.innerHTML = `<p class="vazio">Nenhuma banda favorita salva.</p>`;
+    bandFavoritesGrid.innerHTML = `<p class="vazio">Nenhum artista favorito salvo.</p>`;
     return;
   }
 
@@ -242,7 +243,7 @@ function renderDashboard() {
       <strong>${dashboard.totals.albumFavorites}</strong>
     </article>
     <article class="stat-card">
-      <p>Bandas favoritas</p>
+      <p>Artistas favoritos</p>
       <strong>${dashboard.totals.bandFavorites}</strong>
     </article>
     <article class="stat-card">
@@ -255,6 +256,7 @@ function renderDashboard() {
     </article>
   `;
 
+  renderWrapped(dashboard);
   renderInsightList(topGenresList, dashboard.topGenres, "Sem gêneros suficientes ainda.");
   renderInsightList(topArtistsList, dashboard.topArtists, "Sem artistas suficientes ainda.");
   renderInsightList(topDecadesList, dashboard.topDecades, "Sem décadas suficientes ainda.");
@@ -330,6 +332,66 @@ function createCollectionCard(collection) {
   return card;
 }
 
+function wrappedText(dashboard) {
+  const ano = new Date().getFullYear();
+  const partes = [
+    dashboard.topArtists[0] && `artista: ${dashboard.topArtists[0].label}`,
+    dashboard.topGenres[0] && `gênero: ${dashboard.topGenres[0].label}`,
+    dashboard.topDecades[0] && `década: ${dashboard.topDecades[0].label}`
+  ].filter(Boolean);
+  return `Minha retrospectiva ${ano} na Wikiband — ${partes.join(", ")}. ${dashboard.totals.plays} prévias ouvidas.`;
+}
+
+function renderWrapped(dashboard) {
+  const ano = new Date().getFullYear();
+  const temDados = dashboard.topArtists.length > 0;
+
+  if (!temDados) {
+    wrappedCard.innerHTML = `
+      <span class="eyebrow">Retrospectiva ${ano}</span>
+      <h2>Sua retrospectiva começa aqui</h2>
+      <p>Ouça prévias e favorite álbuns e artistas: a Wikiband monta um resumo do seu gosto musical.</p>
+      <div class="sobre-acoes"><a class="primary-btn" href="/">Explorar a vitrine</a></div>
+    `;
+    return;
+  }
+
+  const fatos = [
+    ["Artista do momento", dashboard.topArtists[0]?.label],
+    ["Gênero favorito", dashboard.topGenres[0]?.label],
+    ["Década preferida", dashboard.topDecades[0]?.label],
+    ["Prévias ouvidas", String(dashboard.totals.plays)]
+  ].filter(([, valor]) => valor);
+
+  wrappedCard.innerHTML = `
+    <span class="eyebrow">Retrospectiva ${ano}</span>
+    <h2>Seu som em um resumo</h2>
+    <div class="wrapped-facts">
+      ${fatos.map(([rotulo, valor]) => `<div class="wrapped-fact"><span>${escapeHtml(rotulo)}</span><strong>${escapeHtml(valor)}</strong></div>`).join("")}
+    </div>
+    <button class="primary-btn" id="shareWrappedButton" type="button">Compartilhar retrospectiva</button>
+  `;
+
+  document.getElementById("shareWrappedButton").addEventListener("click", async () => {
+    const texto = `${wrappedText(dashboard)} ${window.location.origin}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Minha retrospectiva Wikiband", text: texto });
+      } else {
+        await navigator.clipboard.writeText(texto);
+        window.WikibandUI?.toast("Retrospectiva copiada");
+      }
+    } catch (erro) {
+      // share sheet dismissed
+    }
+  });
+}
+
+function confirmar(mensagem) {
+  return window.confirm(mensagem);
+}
+
 function renderCollections() {
   const collections = Storage.getCollections();
 
@@ -346,6 +408,7 @@ function renderCollections() {
 }
 
 clearAlbumFavoritesButton.addEventListener("click", () => {
+  if (!confirmar("Remover todos os álbuns favoritos?")) return;
   Storage.clearAlbumFavorites();
   WikiPreview.stop();
   renderAlbumFavorites();
@@ -353,6 +416,7 @@ clearAlbumFavoritesButton.addEventListener("click", () => {
 });
 
 clearBandFavoritesPageButton.addEventListener("click", () => {
+  if (!confirmar("Remover todos os artistas favoritos?")) return;
   Storage.clearBandFavorites();
   renderBandFavorites();
   renderDashboard();
@@ -377,6 +441,7 @@ stopRadioFavoritesButton.addEventListener("click", () => {
 });
 
 clearPlayHistoryButton.addEventListener("click", () => {
+  if (!confirmar("Apagar o histórico de reproduções? Isso zera sua retrospectiva.")) return;
   Storage.clearPlayHistory();
   renderDashboard();
 });
@@ -391,7 +456,17 @@ createCollectionButton.addEventListener("click", () => {
   renderDashboard();
 });
 
-renderAlbumFavorites();
-renderBandFavorites();
-renderDashboard();
-renderCollections();
+function renderTudo() {
+  renderAlbumFavorites();
+  renderBandFavorites();
+  renderDashboard();
+  renderCollections();
+}
+
+if (!Storage.getCurrentSession()) {
+  document.getElementById("librarySubtitle").innerHTML =
+    'Sua biblioteca fica salva na sua conta. <a href="/login.html">Entre</a> ou <a href="/cadastro.html">crie uma conta</a> para começar.';
+}
+
+document.addEventListener("wikiband:library-synced", renderTudo);
+renderTudo();

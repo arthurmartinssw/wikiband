@@ -1,5 +1,5 @@
-const CACHE_NAME = "wikiband-shell-v15";
-const RUNTIME_CACHE = "wikiband-runtime-v15";
+const CACHE_NAME = "wikiband-shell-v16";
+const RUNTIME_CACHE = "wikiband-runtime-v16";
 
 const APP_SHELL = [
   "/",
@@ -10,13 +10,16 @@ const APP_SHELL = [
   "/login.html",
   "/cadastro.html",
   "/perfil.html",
+  "/usuario.html",
   "/offline.html",
   "/site.webmanifest",
   "/assets/css/style.css",
   "/assets/js/core/pwa.js",
+  "/assets/js/core/theme.js",
   "/assets/js/core/preview-player.js",
   "/assets/js/modules/storage.js",
-  "/assets/js/modules/auth-ui.js",
+  "/assets/js/modules/site-chrome.js",
+  "/assets/js/modules/artist-info.js",
   "/assets/js/modules/results.js",
   "/assets/js/modules/links.js",
   "/assets/js/modules/share.js",
@@ -30,6 +33,8 @@ const APP_SHELL = [
   "/assets/js/pages/login.js",
   "/assets/js/pages/cadastro.js",
   "/assets/js/pages/perfil.js",
+  "/assets/js/pages/usuario.js",
+  "/assets/img/placeholder.svg",
   "/assets/icons/favicon-16x16.png",
   "/assets/icons/favicon-32x32.png",
   "/assets/icons/apple-touch-icon.png"
@@ -44,6 +49,7 @@ function getOfflineFallbackForPath(pathname) {
   if (normalizedPath === "/login" || normalizedPath === "/login.html") return "/login.html";
   if (normalizedPath === "/cadastro" || normalizedPath === "/cadastro.html") return "/cadastro.html";
   if (normalizedPath === "/perfil" || normalizedPath === "/perfil.html") return "/perfil.html";
+  if (normalizedPath === "/usuario" || normalizedPath === "/usuario.html") return "/usuario.html";
   return "/index.html";
 }
 
