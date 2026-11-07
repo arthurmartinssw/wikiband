@@ -54,17 +54,21 @@
 
   function renderPhoto(session) {
     const avatar = Storage.getCurrentAvatar?.();
-    photoPreview.replaceChildren();
+    const previews = [photoPreview, document.getElementById("profilePhotoLarge")].filter(Boolean);
 
-    if (avatar) {
-      const image = document.createElement("img");
-      image.src = avatar;
-      image.alt = "";
-      photoPreview.appendChild(image);
-      return;
-    }
+    previews.forEach((preview) => {
+      preview.replaceChildren();
 
-    photoPreview.textContent = Storage.getUserInitials?.(session) || "WB";
+      if (avatar) {
+        const image = document.createElement("img");
+        image.src = avatar;
+        image.alt = "";
+        preview.appendChild(image);
+        return;
+      }
+
+      preview.textContent = Storage.getUserInitials?.(session) || "WB";
+    });
   }
 
   function renderStats() {
@@ -229,6 +233,13 @@
     passwordStatus.classList.toggle("is-success", type === "success");
   }
 
+  // Password fields start readonly so the browser cannot autofill the saved password:
+  // the user has to type the current and the new password.
+  passwordForm?.querySelectorAll("[data-no-autofill]").forEach((field) => {
+    field.value = "";
+    field.addEventListener("focus", () => field.removeAttribute("readonly"), { once: true });
+  });
+
   passwordForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -238,6 +249,11 @@
 
     if (!senhaAtual || !novaSenha) {
       setPasswordFeedback("Preencha a senha atual e a nova senha.", "error");
+      return;
+    }
+
+    if (novaSenha === senhaAtual) {
+      setPasswordFeedback("A nova senha precisa ser diferente da atual.", "error");
       return;
     }
 

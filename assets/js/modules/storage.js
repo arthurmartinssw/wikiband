@@ -418,7 +418,9 @@
     if (!USERNAME_REGEX.test(normalized)) return { ok: false, status: 404 };
 
     try {
-      const { response, body } = await requestJson(`/users/${encodeURIComponent(normalized)}`);
+      const { response, body } = await requestJson(`/users/${encodeURIComponent(normalized)}`, {
+        token: getCurrentSession()?.token
+      });
       return response.ok && body?.ok ? { ok: true, profile: body.profile } : { ok: false, status: response.status };
     } catch (erro) {
       return { ok: false, status: 0 };
@@ -880,12 +882,14 @@
       ts: Date.now(),
       key: buildItemKey(item),
       tipo: item.tipo || (item.trackId ? "song" : item.albumId ? "album" : "artist"),
-      nome: item.nome || item.artista || "Artista desconhecido",
-      musica: item.musica || item.nome || "",
-      album: item.album || "",
-      genero: item.genero || "Nao informado",
-      pais: item.pais || "Nao informado",
-      lancamento: item.lancamento || ""
+      // Radio/playlist items can be raw iTunes objects, so fall back to their field names.
+      nome: item.nome || item.artista || item.artistName || "Artista desconhecido",
+      musica: item.musica || item.trackName || item.nome || "",
+      album: item.album || item.collectionName || "",
+      genero: item.genero || item.primaryGenreName || "Nao informado",
+      pais: item.pais || item.country || "Nao informado",
+      lancamento: item.lancamento || String(item.releaseDate || "").slice(0, 4),
+      imagem: String(item.imagem || item.artworkUrl100 || "").replace("100x100bb", "600x600bb")
     };
 
     const plays = getPlayHistory();
@@ -1041,8 +1045,50 @@
     };
   }
 
+  // ---------- Social ----------
+
+  async function socialRequest(path, options = {}) {
+    try {
+      const { response, body } = await requestJson(path, options);
+      if (response.status === 401 && options.token) {
+        clearCurrentSession();
+        document.dispatchEvent(new CustomEvent("wikiband:session-expired"));
+      }
+      return response.ok && body?.ok ? { ok: true, ...body } : { ok: false, status: response.status, message: body?.message };
+    } catch (erro) {
+      return { ok: false, status: 0, message: "Nao foi possivel conectar ao servidor." };
+    }
+  }
+
+  function setFollow(username, follow) {
+    const session = getCurrentSession();
+    if (!session?.token) return Promise.resolve({ ok: false, status: 401, message: "Entre para seguir pessoas." });
+    return socialRequest(`/users/${encodeURIComponent(normalizeUsername(username))}/follow`, {
+      method: follow ? "POST" : "DELETE",
+      token: session.token
+    });
+  }
+
+  function fetchPeopleList(username, kind) {
+    return socialRequest(`/users/${encodeURIComponent(normalizeUsername(username))}/${kind === "following" ? "following" : "followers"}`);
+  }
+
+  function searchPeople(term) {
+    return socialRequest(`/users?q=${encodeURIComponent(String(term || "").trim().slice(0, 60))}`);
+  }
+
+  function fetchFeed() {
+    const session = getCurrentSession();
+    if (!session?.token) return Promise.resolve({ ok: false, status: 401 });
+    return socialRequest("/feed", { token: session.token });
+  }
+
   window.WikibandStorage = {
     authenticateUser,
+    fetchFeed,
+    fetchPeopleList,
+    searchPeople,
+    setFollow,
     changePassword,
     fetchPublicProfile,
     getLibraryPrivacy,

@@ -721,7 +721,7 @@
       lines.push("Meu conselho: crie uma colecao por clima ou por genero, depois pesquise um artista fora do seu padrao para ampliar a descoberta.");
     }
 
-    return lines.join("\n");
+    return lines.join("\n\n");
   }
 
   function buildRecommendationReply(context) {
@@ -924,7 +924,7 @@
 
     return [
       `Para entrar em ${artist.name || term}, eu iria pelos albuns primeiro.`,
-      `Uma rota boa: ${albums.slice(0, 5).map(formatAlbumResult).join("; ")}.`,
+      bulletList("**Uma rota boa:**", albums.slice(0, 5).map(formatAlbumResult)),
       oldest ? `Se quiser entender a fase mais antiga que apareceu aqui, comece por ${formatAlbumResult(oldest)}.` : "",
       newest && newest !== oldest ? `Depois compare com ${formatAlbumResult(newest)} para sentir a mudanca de fase.` : "",
       "Meu conselho: escolha um album, ouca duas previas e so depois avance para outro. Esse tipo de artista costuma ficar melhor quando voce percebe a atmosfera de cada disco."
@@ -943,7 +943,7 @@
     }
 
     return [
-      `Para sentir ${artist.name || term}, eu comecaria por estas faixas: ${songs.slice(0, 6).map(formatSongResult).join("; ")}.`,
+      bulletList(`**Para sentir ${artist.name || term}, comece por:**`, songs.slice(0, 6).map(formatSongResult)),
       previewSongs.length
         ? `Se quiser ouvir agora, procure por ${previewSongs.slice(0, 4).map((item) => item.trackName).join(", ")}: essas sao boas candidatas para previa.`
         : "Nao vi previas claras para essas faixas, entao eu tentaria procurar o artista na aba Musicas e testar outras versoes.",
@@ -967,6 +967,10 @@
     ].join("\n");
   }
 
+  function bulletList(title, items) {
+    return [title, ...items.map((item) => `- ${item}`)].join("\n");
+  }
+
   function buildItunesSummaryReply(term, bundle, context) {
     const unavailable = describeItunesAvailability(bundle);
     if (unavailable) return unavailable;
@@ -987,26 +991,26 @@
     }
 
     if (albums.length) {
-      lines.push(`Eu comecaria pelos albuns ${albums.slice(0, 4).map(formatAlbumResult).join("; ")}.`);
+      lines.push(bulletList("**Álbuns para começar:**", albums.slice(0, 4).map(formatAlbumResult)));
     }
 
     if (songs.length) {
-      lines.push(`Para sentir o som sem se comprometer com um album inteiro, teste ${songs.slice(0, 4).map(formatSongResult).join("; ")}.`);
+      lines.push(bulletList("**Faixas para sentir o som:**", songs.slice(0, 4).map(formatSongResult)));
     }
 
     if (genres.length) {
-      lines.push(`A leitura geral aponta para ${genres.join(", ")}.`);
+      lines.push(`**Estilos:** ${genres.join(", ")}.`);
     }
 
     if (guide) {
-      lines.push(`Como eu exploraria: ${guide.text}`);
+      lines.push(`**Como explorar:** ${guide.text}`);
     } else if (context.page === "home") {
-      lines.push("Como eu exploraria: abriria um album dos primeiros resultados, ouviria previews e salvaria o que chamasse atencao para comparar depois.");
+      lines.push("**Como explorar:** abra um álbum dos primeiros resultados, ouça as prévias e salve o que chamar atenção.");
     } else {
-      lines.push("Como eu exploraria: alternaria entre Albuns e Musicas para separar discografia de faixas soltas.");
+      lines.push("**Como explorar:** alterne entre Álbuns e Músicas para separar discografia de faixas soltas.");
     }
 
-    return lines.join("\n");
+    return lines.join("\n\n");
   }
 
   function buildItunesFocusedReply(term, bundle, message, context) {
@@ -1316,22 +1320,46 @@
   }
 
   function renderMessageText(node, value) {
-    const lines = String(value || "").split("\n");
     node.replaceChildren();
+    let list = null;
 
-    lines.forEach((line, index) => {
-      if (index > 0) {
-        node.appendChild(document.createElement("br"));
-      }
+    String(value || "")
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .forEach((rawLine) => {
+        const line = rawLine.trim();
 
-      appendFormattedInline(node, line);
-    });
+        if (!line) {
+          list = null;
+          return;
+        }
+
+        const item = line.match(/^(?:[-•*]|(\d+)[.)])\s+(.+)$/);
+
+        if (item) {
+          const tag = item[1] ? "ol" : "ul";
+          if (!list || list.tagName.toLowerCase() !== tag) {
+            list = createNode(tag, "ai-list");
+            if (item[1] && item[1] !== "1") list.start = Number(item[1]);
+            node.appendChild(list);
+          }
+          const li = createNode("li");
+          appendFormattedInline(li, item[2]);
+          list.appendChild(li);
+          return;
+        }
+
+        list = null;
+        const paragraph = createNode("p", "ai-p");
+        appendFormattedInline(paragraph, line);
+        node.appendChild(paragraph);
+      });
   }
 
   function renderMessage(message) {
     const row = createNode("div", `music-assistant-message ${message.role === "user" ? "is-user" : "is-assistant"}`);
     const bubble = createNode("div", "music-assistant-bubble");
-    const text = createNode("p");
+    const text = createNode("div", "music-assistant-text");
     const time = createNode("span", "music-assistant-time", formatTime(message.at));
 
     renderMessageText(text, message.text);
@@ -1400,7 +1428,7 @@
     messages = messages.slice(-MAX_MESSAGES);
 
     const row = appendMessage(message);
-    const textNode = row.querySelector("p");
+    const textNode = row.querySelector(".music-assistant-text");
     row.classList.add("is-writing");
 
     for (let index = 0; index < chunks.length; index += chunkSize) {
@@ -1477,6 +1505,7 @@
     if (!message) return;
 
     input.value = "";
+    input.style.height = "";
     addMessage("user", message);
     setResponding(true);
     setTyping(true, "Pensando");
@@ -1576,12 +1605,16 @@
     sendButton = createNode("button", "music-assistant-send", "Enviar");
 
     input.rows = 1;
-    input.placeholder = "Pergunte sobre artistas, albuns ou favoritos...";
+    input.placeholder = "Pergunte algo sobre música...";
     input.setAttribute("aria-label", "Mensagem para a MusicAI");
     sendButton.type = "submit";
     form.append(input, sendButton);
 
     form.addEventListener("submit", handleSubmit);
+    input.addEventListener("input", () => {
+      input.style.height = "auto";
+      input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
+    });
     input.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();

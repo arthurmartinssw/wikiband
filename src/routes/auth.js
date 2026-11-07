@@ -288,7 +288,8 @@ router.post("/password", passwordLimiter, requireUser, async (req, res) => {
     return;
   }
 
-  const passwordError = validatePassword(novaSenha);
+  const passwordError =
+    novaSenha === senhaAtual ? "A nova senha precisa ser diferente da atual." : validatePassword(novaSenha);
 
   if (passwordError) {
     fail(res, 400, "VALIDATION_ERROR", passwordError);

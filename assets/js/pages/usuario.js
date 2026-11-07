@@ -1,5 +1,6 @@
 (function initPublicProfile(window, document) {
   const Storage = window.WikibandStorage;
+  const People = window.WikibandPeople;
   const Links = window.WikibandLinks;
   const Safe = window.WikibandSafe;
   const container = document.getElementById("publicProfile");
@@ -10,16 +11,6 @@
     if (className) node.className = className;
     if (text !== undefined) node.textContent = text;
     return node;
-  }
-
-  function initials(name) {
-    return String(name || "?")
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase();
   }
 
   function itemTile(item) {
@@ -48,41 +39,115 @@
     return wrapper;
   }
 
+  function collectionsView(collections) {
+    if (!collections.length) return element("p", "vazio", "Nenhuma coleção pública.");
+
+    const wrapper = element("div");
+    collections.forEach((collection) => {
+      const block = element("section", "section");
+      const head = element("div", "section-head");
+      head.appendChild(element("h2", "", `${collection.name} · ${collection.items.length}`));
+      const rail = element("div", "rail");
+      rail.append(...collection.items.map(itemTile));
+      block.append(head, collection.items.length ? rail : element("p", "vazio", "Coleção vazia."));
+      wrapper.appendChild(block);
+    });
+    return wrapper;
+  }
+
   function renderNotFound() {
-    container.replaceChildren();
     const box = element("div", "detalhe-content painel");
-    const link = element("a", "primary-btn", "Ir para a vitrine");
-    link.href = "/";
+    const link = element("a", "primary-btn", "Encontrar pessoas");
+    link.href = "/comunidade.html";
     box.append(
       element("h1", "", "Perfil não encontrado"),
       element("p", "status", "Este perfil não existe ou é privado."),
       link
     );
-    container.appendChild(box);
+    container.replaceChildren(box);
+  }
+
+  function stat(value, label, panelId) {
+    const button = element("button", "profile-stat");
+    button.type = "button";
+    button.append(element("strong", "", String(value)), element("span", "", label));
+    button.addEventListener("click", () => {
+      document.querySelector(`[aria-controls="${panelId}"]`)?.click();
+      document.getElementById(panelId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return button;
   }
 
   function render(profile) {
     document.title = `${profile.nome} (@${profile.username}) — Wikiband`;
 
     const hero = element("section", "public-hero glass");
-    const info = element("div");
+    const info = element("div", "public-info");
     const since = profile.membroDesde ? new Date(profile.membroDesde).getFullYear() : "";
+    const stats = element("div", "profile-stat-row");
+
+    const renderStats = (counts) => {
+      stats.replaceChildren(
+        stat(counts.seguidores, counts.seguidores === 1 ? "seguidor" : "seguidores", "pubSeguidores"),
+        stat(counts.seguindo, "seguindo", "pubSeguindo"),
+        stat(profile.albumFavorites.length + profile.bandFavorites.length, "favoritos", "pubAlbuns")
+      );
+    };
+    renderStats(profile);
+
     info.append(
       element("span", "eyebrow", "Perfil público"),
       element("h1", "", profile.nome),
-      element("p", "", `@${profile.username}${since ? ` · na Wikiband desde ${since}` : ""}`)
+      element("p", "", `@${profile.username}${since ? ` · na Wikiband desde ${since}` : ""}`),
+      stats
     );
-    hero.append(element("div", "public-avatar", initials(profile.nome)), info);
+
+    const actions = element("div", "public-actions");
+    if (profile.ehVoce) {
+      const edit = element("a", "secondary-btn", "Editar perfil");
+      edit.href = "/perfil.html";
+      actions.appendChild(edit);
+    } else {
+      actions.appendChild(
+        People.followButton(profile.username, profile.voceSegue, (result) => {
+          renderStats({ seguidores: result.seguidores, seguindo: profile.seguindo });
+          loadPeople("followers", followersPanel);
+        })
+      );
+    }
+
+    const share = element("button", "secondary-btn", "Compartilhar");
+    share.type = "button";
+    share.addEventListener("click", async () => {
+      const url = window.location.href;
+      try {
+        if (navigator.share) await navigator.share({ title: `${profile.nome} na Wikiband`, url });
+        else {
+          await navigator.clipboard.writeText(url);
+          window.WikibandUI?.toast("Link do perfil copiado");
+        }
+      } catch (error) {
+        // share sheet dismissed
+      }
+    });
+    actions.appendChild(share);
+
+    hero.append(element("div", "public-avatar", People.initials(profile.nome)), info, actions);
+
+    const followersPanel = element("div", "", "");
+    const followingPanel = element("div", "", "");
+
+    const sections = [
+      ["pubAlbuns", "Álbuns", grid(profile.albumFavorites, "Nenhum álbum favorito ainda.")],
+      ["pubArtistas", "Artistas", grid(profile.bandFavorites, "Nenhum artista favorito ainda.")],
+      ["pubColecoes", "Coleções", collectionsView(profile.collections)],
+      ["pubSeguidores", "Seguidores", followersPanel],
+      ["pubSeguindo", "Seguindo", followingPanel]
+    ];
 
     const tabs = element("div", "tabs glass");
     tabs.setAttribute("role", "tablist");
-    tabs.setAttribute("aria-label", "Biblioteca pública");
-
-    const sections = [
-      ["pubAlbuns", `Álbuns (${profile.albumFavorites.length})`, grid(profile.albumFavorites, "Nenhum álbum favorito ainda.")],
-      ["pubArtistas", `Artistas (${profile.bandFavorites.length})`, grid(profile.bandFavorites, "Nenhum artista favorito ainda.")],
-      ["pubColecoes", `Coleções (${profile.collections.length})`, collectionsView(profile.collections)]
-    ];
+    tabs.setAttribute("aria-label", "Perfil público");
 
     const panels = sections.map(([id, label, content], index) => {
       const tab = element("button", "tab", label);
@@ -101,22 +166,20 @@
 
     container.replaceChildren(hero, tabs, ...panels);
     window.WikibandUI?.initTabs(container);
+    loadPeople("followers", followersPanel);
+    loadPeople("following", followingPanel);
   }
 
-  function collectionsView(collections) {
-    if (!collections.length) return element("p", "vazio", "Nenhuma coleção pública.");
-
-    const wrapper = element("div");
-    collections.forEach((collection) => {
-      const block = element("section", "section");
-      const head = element("div", "section-head");
-      head.appendChild(element("h2", "", `${collection.name} · ${collection.items.length}`));
-      const rail = element("div", "rail");
-      rail.append(...collection.items.map(itemTile));
-      block.append(head, collection.items.length ? rail : element("p", "vazio", "Coleção vazia."));
-      wrapper.appendChild(block);
-    });
-    return wrapper;
+  async function loadPeople(kind, panel) {
+    panel.replaceChildren(element("p", "loading", "Carregando..."));
+    const result = await Storage.fetchPeopleList(username, kind);
+    const people = result.ok ? result.people : [];
+    panel.replaceChildren(
+      People.peopleList(
+        people,
+        kind === "followers" ? "Ninguém com perfil público segue esta pessoa ainda." : "Esta pessoa ainda não segue ninguém com perfil público."
+      )
+    );
   }
 
   Storage.fetchPublicProfile(username).then((result) => {

@@ -38,50 +38,68 @@
           <button class="tab" role="tab" id="tabPrivacidadeBtn" aria-controls="tabPrivacidade">Privacidade</button>
         </div>
 
-        <div class="section painel tab-panel" role="tabpanel" id="tabPerfil" aria-labelledby="tabPerfilBtn">
-          <form id="profileForm" class="auth-form profile-form" action="#" method="post" novalidate>
-            <label class="auth-field" for="profilePhoto">
-              <span>Foto de perfil</span>
-              <input id="profilePhoto" type="file" accept="image/png,image/jpeg,image/webp" />
-              <small>A foto fica salva apenas neste navegador.</small>
-            </label>
-            <label class="auth-field" for="profileName">
-              <span>Nome</span>
-              <input id="profileName" type="text" name="nome" autocomplete="name" maxlength="80" required />
-            </label>
-            <label class="auth-field" for="profileUsername">
-              <span>Nome de usuário</span>
-              <input id="profileUsername" type="text" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[a-z0-9_]{3,24}" required />
-              <small>Letras minúsculas, números e underline.</small>
-            </label>
-            <label class="auth-field" for="profileEmail">
-              <span>E-mail</span>
-              <input id="profileEmail" type="email" name="email" disabled />
-            </label>
-            <p id="profileStatus" class="auth-feedback" role="status" aria-live="polite"></p>
-            <div class="profile-actions">
-              <button id="profileSubmit" class="primary-btn" type="submit">Salvar perfil</button>
-              <button id="profileRemovePhoto" class="secondary-btn" type="button">Remover foto</button>
+        <div class="section tab-panel settings-stack" role="tabpanel" id="tabPerfil" aria-labelledby="tabPerfilBtn">
+          <section class="painel settings-card">
+            <div class="settings-head">
+              <h2>Foto de perfil</h2>
+              <p>Fica salva apenas neste navegador.</p>
             </div>
-          </form>
+            <div class="photo-row">
+              <div class="profile-photo-preview is-large" id="profilePhotoLarge" aria-hidden="true">WB</div>
+              <div class="profile-actions">
+                <label class="secondary-btn file-btn" for="profilePhoto">Escolher foto</label>
+                <input id="profilePhoto" class="sr-only" type="file" accept="image/png,image/jpeg,image/webp" />
+                <button id="profileRemovePhoto" class="ghost-btn" type="button">Remover foto</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="painel settings-card">
+            <div class="settings-head">
+              <h2>Dados da conta</h2>
+              <p>Seu nome aparece nas boas-vindas e no perfil público.</p>
+            </div>
+            <form id="profileForm" class="auth-form profile-form" action="#" method="post" novalidate>
+              <div class="field-grid">
+                <label class="auth-field" for="profileName">
+                  <span>Nome</span>
+                  <input id="profileName" type="text" name="nome" autocomplete="name" maxlength="80" required />
+                </label>
+                <label class="auth-field" for="profileUsername">
+                  <span>Nome de usuário</span>
+                  <input id="profileUsername" type="text" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[a-z0-9_]{3,24}" required />
+                  <small>Letras minúsculas, números e underline.</small>
+                </label>
+              </div>
+              <label class="auth-field" for="profileEmail">
+                <span>E-mail</span>
+                <input id="profileEmail" type="email" name="email" disabled />
+                <small>O e-mail não pode ser alterado e nunca aparece para outras pessoas.</small>
+              </label>
+              <p id="profileStatus" class="auth-feedback" role="status" aria-live="polite"></p>
+              <div class="profile-actions">
+                <button id="profileSubmit" class="primary-btn" type="submit">Salvar alterações</button>
+              </div>
+            </form>
+          </section>
         </div>
 
         <div class="section painel tab-panel" role="tabpanel" id="tabSeguranca" aria-labelledby="tabSegurancaBtn" hidden>
           <form id="passwordForm" class="auth-form" action="#" method="post" novalidate>
             <h2>Trocar senha</h2>
-            <p class="status">Ao trocar a senha, você sai de todos os outros dispositivos.</p>
+            <p class="status">Digite a senha atual e a nova. Ao trocar, você sai de todos os outros dispositivos.</p>
             <label class="auth-field" for="currentPassword">
               <span>Senha atual</span>
-              <input id="currentPassword" type="password" autocomplete="current-password" maxlength="128" required />
+              <input id="currentPassword" type="password" autocomplete="off" data-no-autofill maxlength="128" required readonly />
             </label>
             <label class="auth-field" for="newPassword">
               <span>Nova senha</span>
-              <input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required />
+              <input id="newPassword" type="password" autocomplete="new-password" data-no-autofill minlength="8" maxlength="72" required readonly />
               <small>Mínimo de 8 caracteres, com uma letra maiúscula e um número.</small>
             </label>
             <label class="auth-field" for="confirmNewPassword">
               <span>Confirmar nova senha</span>
-              <input id="confirmNewPassword" type="password" autocomplete="new-password" maxlength="72" required />
+              <input id="confirmNewPassword" type="password" autocomplete="new-password" data-no-autofill maxlength="72" required readonly />
             </label>
             <p id="passwordStatus" class="auth-feedback" role="status" aria-live="polite"></p>
             <div class="profile-actions">

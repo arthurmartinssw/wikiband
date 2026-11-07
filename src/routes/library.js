@@ -2,7 +2,6 @@ const express = require("express");
 const { createRateLimiter } = require("../middleware/rate-limit");
 const { requireUser } = require("../session");
 const library = require("../db/library");
-const { findUserByUsername } = require("../db/users");
 
 const MAX_LIBRARY_BYTES = 512 * 1024;
 const LIST_LIMITS = {
@@ -13,18 +12,12 @@ const LIST_LIMITS = {
   collections: 100
 };
 const PUBLIC_ITEM_FIELDS = ["tipo", "nome", "album", "musica", "genero", "lancamento", "albumId", "bandaId", "trackId"];
-const USERNAME_REGEX = /^[a-z0-9_]{3,24}$/;
 
 const libraryLimiter = createRateLimiter({
   keyPrefix: "library",
   windowMs: 5 * 60 * 1000,
   max: 90,
   message: "Muitas sincronizacoes em pouco tempo. Aguarde um instante."
-});
-const publicProfileLimiter = createRateLimiter({
-  keyPrefix: "public-profile",
-  windowMs: 60 * 1000,
-  max: 60
 });
 
 function fail(res, status, code, message) {
@@ -127,40 +120,9 @@ libraryRouter.put("/", async (req, res) => {
   res.json({ ok: true, ...mapLibraryRow(row) });
 });
 
-const usersRouter = express.Router();
-
-usersRouter.get("/:username", publicProfileLimiter, async (req, res) => {
-  const username = String(req.params.username || "").trim().toLowerCase();
-  const user = USERNAME_REGEX.test(username) ? await findUserByUsername(username) : null;
-  const row = user ? await library.getLibrary(user.id) : null;
-
-  // Same answer for "does not exist" and "is private", so profiles cannot be enumerated.
-  if (!row?.publico) {
-    fail(res, 404, "PROFILE_NOT_FOUND", "Perfil nao encontrado ou privado.");
-    return;
-  }
-
-  const dados = row.dados || {};
-
-  res.set("Cache-Control", "public, max-age=60");
-  res.json({
-    ok: true,
-    profile: {
-      nome: publicText(user.nome, 80),
-      username,
-      membroDesde: user.criado_em || null,
-      albumFavorites: publicList(dados.albumFavorites, 48),
-      bandFavorites: publicList(dados.bandFavorites, 48),
-      collections: (Array.isArray(dados.collections) ? dados.collections : []).slice(0, 24).map((collection) => ({
-        name: publicText(collection?.name, 80),
-        items: publicList((collection?.items || []).map((saved) => saved?.item), 48)
-      }))
-    }
-  });
-});
-
 module.exports = {
   libraryRouter,
-  usersRouter,
+  publicList,
+  publicText,
   validateLibrary
 };

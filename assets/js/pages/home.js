@@ -938,12 +938,31 @@ async function carregarRanking(type, container) {
   }
 }
 
+// The hero pill shows the current #1 song and opens it.
+function mostrarTopoNoHero(primeira) {
+  const pill = document.getElementById("heroTopSong");
+  const value = pill.querySelector(".hero-pill-value");
+
+  if (!primeira) {
+    value.textContent = "Veja o ranking";
+    return;
+  }
+
+  value.textContent = `#1 ${primeira.musica} · ${primeira.nome}`;
+  pill.href = Links?.buildDetailUrl(primeira) || "#em-alta";
+  pill.addEventListener("click", (event) => {
+    event.preventDefault();
+    abrirDetalhes(primeira);
+  });
+}
+
 function carregarVitrine() {
   renderQuickPicks();
   renderGenres();
   carregarRanking("songs", chartSongs).then((itens) => {
     chartSongItems = itens.filter((item) => item.previewUrl);
     playChartsButton.disabled = !chartSongItems.length;
+    mostrarTopoNoHero(itens[0]);
   });
   carregarRanking("albums", chartAlbums);
 }

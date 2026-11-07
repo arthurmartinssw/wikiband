@@ -1,5 +1,5 @@
-const CACHE_NAME = "wikiband-shell-v16";
-const RUNTIME_CACHE = "wikiband-runtime-v16";
+const CACHE_NAME = "wikiband-shell-v17";
+const RUNTIME_CACHE = "wikiband-runtime-v17";
 
 const APP_SHELL = [
   "/",
@@ -11,6 +11,8 @@ const APP_SHELL = [
   "/cadastro.html",
   "/perfil.html",
   "/usuario.html",
+  "/comunidade.html",
+  "/retrospectiva.html",
   "/offline.html",
   "/site.webmanifest",
   "/assets/css/style.css",
@@ -34,6 +36,9 @@ const APP_SHELL = [
   "/assets/js/pages/cadastro.js",
   "/assets/js/pages/perfil.js",
   "/assets/js/pages/usuario.js",
+  "/assets/js/pages/comunidade.js",
+  "/assets/js/pages/retrospectiva.js",
+  "/assets/js/modules/people.js",
   "/assets/img/placeholder.svg",
   "/assets/icons/favicon-16x16.png",
   "/assets/icons/favicon-32x32.png",

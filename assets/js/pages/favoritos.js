@@ -369,7 +369,10 @@ function renderWrapped(dashboard) {
     <div class="wrapped-facts">
       ${fatos.map(([rotulo, valor]) => `<div class="wrapped-fact"><span>${escapeHtml(rotulo)}</span><strong>${escapeHtml(valor)}</strong></div>`).join("")}
     </div>
-    <button class="primary-btn" id="shareWrappedButton" type="button">Compartilhar retrospectiva</button>
+    <div class="sobre-acoes">
+      <a class="primary-btn" href="/retrospectiva.html">Ver minha retrospectiva</a>
+      <button class="secondary-btn" id="shareWrappedButton" type="button">Compartilhar texto</button>
+    </div>
   `;
 
   document.getElementById("shareWrappedButton").addEventListener("click", async () => {

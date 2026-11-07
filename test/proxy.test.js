@@ -42,6 +42,10 @@ test("encaminha rotas permitidas com o IP real e o segredo", async () => {
   assert.strictEqual(lastUpstream.headers["x-wikiband-client-ip"], "203.0.113.9");
   assert.strictEqual(lastUpstream.headers["x-wikiband-proxy-secret"], "segredo-proxy");
 
+  const follow = await call({ url: "/api/proxy?path=users/ana_teste/follow", method: "DELETE" });
+  assert.strictEqual(follow.status, 200);
+  assert.strictEqual(lastUpstream.url, "/api/users/ana_teste/follow");
+
   const put = await call({ url: "/api/proxy?path=library", method: "PUT", headers: { "content-type": "application/json" }, body: "{}" });
   assert.strictEqual(put.status, 200);
   assert.strictEqual(lastUpstream.method, "PUT");
@@ -56,7 +60,10 @@ test("recusa rotas, metodos e usuarios fora da lista", async () => {
     ["/api/proxy?path=users/Ana_Maiuscula", "GET"],
     ["/api/proxy?path=library", "DELETE"],
     ["/api/proxy?path=auth/login", "GET"],
-    ["/api/proxy?path=admin", "GET"]
+    ["/api/proxy?path=admin", "GET"],
+    ["/api/proxy?path=users/ana_teste/follow", "GET"],
+    ["/api/proxy?path=users/ana_teste/delete", "GET"],
+    ["/api/proxy?path=feed", "POST"]
   ]) {
     assert.strictEqual((await call({ url, method })).status, 404, `${method} ${url}`);
   }

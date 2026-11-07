@@ -20,6 +20,11 @@
     plus: '<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
     share: '<path d="M12 3v12M7 8l5-5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
     disc: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/>',
+    users: '<circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2.5 20c1-3.5 3.5-5.5 6.5-5.5s5.5 2 6.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.7 3 2.5 3.5 5.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 13v4M8 21h8M9 17h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    logout: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/>',
+    globe: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z" fill="none" stroke="currentColor" stroke-width="2"/>',
     radio: '<path d="M4.9 19.1a10 10 0 0 1 0-14.2M19.1 4.9a10 10 0 0 1 0 14.2M7.8 16.2a6 6 0 0 1 0-8.4M16.2 7.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="2" fill="currentColor"/>'
   };
 
@@ -113,6 +118,7 @@
   const NAV_ITEMS = [
     { id: "home", label: "Início", href: "/", icon: "home" },
     { id: "library", label: "Biblioteca", href: "/favoritos.html", icon: "library" },
+    { id: "community", label: "Comunidade", href: "/comunidade.html", icon: "users" },
     { id: "about", label: "Sobre", href: "/sobre.html", icon: "info" }
   ];
 
@@ -175,10 +181,11 @@
     return avatar;
   }
 
-  function createMenuItem(label, hrefOrHandler) {
+  function createMenuItem(label, hrefOrHandler, iconName = "", danger = false) {
     const item = document.createElement(typeof hrefOrHandler === "string" ? "a" : "button");
-    item.className = "profile-menu-item";
-    item.textContent = label;
+    item.className = `profile-menu-item${danger ? " is-danger" : ""}`;
+    item.innerHTML = `${iconName ? icon(iconName) : ""}<span></span>`;
+    item.querySelector("span").textContent = label;
 
     if (typeof hrefOrHandler === "string") {
       item.href = hrefOrHandler;
@@ -219,19 +226,42 @@
       const handle = document.createElement("span");
       name.textContent = session.nome;
       handle.textContent = session.username ? `@${session.username}` : session.email;
-      header.append(name, handle);
+      header.append(createAvatar(session), name, handle);
+
+      const group = (title, ...items) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "menu-group";
+        if (title) {
+          const heading = document.createElement("span");
+          heading.className = "menu-group-title";
+          heading.textContent = title;
+          wrapper.appendChild(heading);
+        }
+        wrapper.append(...items);
+        return wrapper;
+      };
+
       dropdown.append(
         header,
-        createMenuItem("Meu perfil", "/perfil.html"),
-        createMenuItem("Biblioteca", "/favoritos.html"),
-        createMenuItem("Coleções", "/favoritos.html#tabColecoes"),
-        createMenuItem("Sair", logout)
+        group(
+          "Conta",
+          createMenuItem("Editar perfil", "/perfil.html#tabPerfil", "user"),
+          createMenuItem("Meu perfil público", `/usuario.html?u=${encodeURIComponent(session.username || "")}`, "globe"),
+          createMenuItem("Senha e segurança", "/perfil.html#tabSeguranca", "lock")
+        ),
+        group(
+          "Música",
+          createMenuItem("Biblioteca", "/favoritos.html", "library"),
+          createMenuItem("Retrospectiva", "/retrospectiva.html", "trophy"),
+          createMenuItem("Comunidade", "/comunidade.html", "users")
+        ),
+        group("", createMenuItem("Sair", logout, "logout", true))
       );
     } else {
       dropdown.append(
-        createMenuItem("Entrar", "/login.html"),
-        createMenuItem("Criar conta", "/cadastro.html"),
-        createMenuItem("Sobre a Wikiband", "/sobre.html")
+        createMenuItem("Entrar", "/login.html", "user"),
+        createMenuItem("Criar conta", "/cadastro.html", "plus"),
+        createMenuItem("Sobre a Wikiband", "/sobre.html", "info")
       );
     }
 
@@ -280,7 +310,7 @@
     brand.className = "brand";
     brand.href = "/";
     brand.setAttribute("aria-label", "Wikiband, página inicial");
-    brand.innerHTML = `<span class="brand-mark">${icon("logo")}</span><span>Wikiband</span>`;
+    brand.innerHTML = `<span class="brand-mark"><img src="/assets/icons/android-chrome-192x192.png" alt="" width="34" height="34"></span><span>Wikiband</span>`;
 
     const tabs = document.createElement("nav");
     tabs.className = "nav-tabs";
@@ -290,7 +320,15 @@
 
     const actions = document.createElement("div");
     actions.className = "nav-actions";
-    actions.append(createThemeToggle(), createProfileMenu(session));
+    // On phones the floating MusicAI button is hidden, so the header carries it.
+    const aiButton = document.createElement("button");
+    aiButton.type = "button";
+    aiButton.className = "icon-btn musicai-action";
+    aiButton.setAttribute("aria-label", "Abrir MusicAI");
+    aiButton.innerHTML = icon("sparkle");
+    aiButton.addEventListener("click", openMusicAI);
+
+    actions.append(aiButton, createThemeToggle(), createProfileMenu(session));
 
     shell.append(brand, tabs, actions);
     header.replaceChildren(shell);
@@ -303,7 +341,7 @@
       createLink(NAV_ITEMS[0], currentPage),
       createButtonTab("Buscar", "search", focusSearch),
       createLink(NAV_ITEMS[1], currentPage),
-      createButtonTab("MusicAI", "sparkle", openMusicAI),
+      createLink(NAV_ITEMS[2], currentPage),
       createLink({ id: "profile", label: session ? "Perfil" : "Entrar", href: session ? "/perfil.html" : "/login.html", icon: "user" }, currentPage)
     );
     document.querySelector(".tabbar")?.remove();
@@ -317,7 +355,7 @@
     footer.className = "site-footer";
     footer.innerHTML = `
       <div class="footer-brand">
-        <a class="brand" href="/"><span class="brand-mark">${icon("logo")}</span><span>Wikiband</span></a>
+        <a class="brand" href="/"><span class="brand-mark"><img src="/assets/icons/android-chrome-192x192.png" alt="" width="34" height="34"></span><span>Wikiband</span></a>
         <p>Uma vitrine para conhecer artistas, ouvir prévias e guardar suas descobertas.</p>
         <small>Dados musicais: Apple Music / iTunes. Biografias: Wikipédia.</small>
       </div>

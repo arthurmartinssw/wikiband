@@ -27,8 +27,9 @@ function cleanMultilineText(value, maxLength = MAX_MESSAGE_CHARS) {
     .replace(/\r\n/g, "\n")
     .split("\n")
     .map(compactText)
-    .filter(Boolean)
     .join("\n")
+    // Keep paragraph breaks (one blank line) so replies stay readable.
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 
   return text.length > maxLength ? `${text.slice(0, maxLength - 1).trim()}...` : text;
@@ -235,7 +236,8 @@ function buildSystemPrompt() {
     "Nao diga que pesquisou em API, iTunes, backend, dados fornecidos ou contexto, a menos que a pessoa pergunte sobre isso.",
     "Nao mostre raciocinio interno, tags de pensamento ou passos ocultos.",
     "Pode usar conhecimento musical geral, mas nao invente fatos especificos (datas, premios, integrantes): quando nao tiver certeza, diga isso de forma simples.",
-    "Prefira respostas com 2 a 5 frases curtas. Use lista curta somente quando ajudar, como albuns ou faixas para comecar. Use **negrito** para nomes importantes."
+    "Formate para leitura no celular: paragrafos curtos separados por uma linha em branco; listas com '- ' (ou '1. ' para rankings), um item por linha; **negrito** para nomes de artistas, albuns e titulos de secao.",
+    "Seja conciso: em geral 2 a 3 paragrafos curtos ou um paragrafo e uma lista de ate 5 itens. Nunca junte varios itens na mesma linha separados por ponto e virgula."
   ].join(" ");
 }
 

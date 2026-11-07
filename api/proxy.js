@@ -24,14 +24,18 @@ const ALLOWED_METHODS_BY_PATH = {
   "auth/profile": new Set(["POST"]),
   "auth/password": new Set(["POST"]),
   "library": new Set(["GET", "PUT"]),
+  "users": new Set(["GET", "HEAD"]),
+  "feed": new Set(["GET", "HEAD"]),
   "itunes/search": new Set(["GET", "HEAD"]),
   "itunes/lookup": new Set(["GET", "HEAD"])
 };
-const PUBLIC_PROFILE_PATH = /^users\/[a-z0-9_]{3,24}$/;
+const PUBLIC_PROFILE_PATH = /^users\/[a-z0-9_]{3,24}(\/(followers|following))?$/;
+const FOLLOW_PATH = /^users\/[a-z0-9_]{3,24}\/follow$/;
 const MAX_PROXY_BODY_BYTES = 600 * 1024;
 
 function allowedMethodsFor(path) {
   if (PUBLIC_PROFILE_PATH.test(path)) return new Set(["GET", "HEAD"]);
+  if (FOLLOW_PATH.test(path)) return new Set(["POST", "DELETE"]);
   return Object.hasOwn(ALLOWED_METHODS_BY_PATH, path) ? ALLOWED_METHODS_BY_PATH[path] : null;
 }
 

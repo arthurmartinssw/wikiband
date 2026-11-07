@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Comunidade — Wikiband</title>
+  <meta name="description" content="Siga pessoas, descubra perfis e veja o que estão ouvindo na Wikiband." />
+  <meta name="theme-color" content="#04060c" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/style.css" />
+  <script src="/assets/js/core/theme.js"></script>
+</head>
+
+<body>
+  <header class="site-header" data-page="community"></header>
+
+<main class="page">
+    <div class="page-hero">
+      <div>
+        <span class="eyebrow">Comunidade</span>
+        <h1>Quem está ouvindo o quê</h1>
+        <p>Siga pessoas com perfil público e acompanhe os favoritos delas.</p>
+      </div>
+      <a class="secondary-btn" href="/perfil.html#tabPrivacidade">Deixar meu perfil público</a>
+    </div>
+
+    <div class="tabs glass" role="tablist" aria-label="Comunidade" data-tabs-hash>
+      <button class="tab" role="tab" id="tabAtividadeBtn" aria-controls="tabAtividade" aria-selected="true">Atividade</button>
+      <button class="tab" role="tab" id="tabPessoasBtn" aria-controls="tabPessoas">Descobrir pessoas</button>
+    </div>
+
+    <section class="section tab-panel" role="tabpanel" id="tabAtividade" aria-labelledby="tabAtividadeBtn">
+      <div class="feed-list" id="feedList"></div>
+    </section>
+
+    <section class="section tab-panel" role="tabpanel" id="tabPessoas" aria-labelledby="tabPessoasBtn" hidden>
+      <div class="search-box people-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <label class="sr-only" for="peopleSearch">Buscar pessoas</label>
+        <input type="search" id="peopleSearch" placeholder="Buscar por nome ou @usuário" maxlength="60" autocomplete="off" />
+      </div>
+      <h2 class="section people-title" id="peopleTitle">Perfis ativos recentemente</h2>
+      <div id="peopleResults"></div>
+    </section>
+  </main>
+
+  <script src="/assets/js/core/preview-player.js"></script>
+  <script src="/assets/js/modules/storage.js"></script>
+  <script src="/assets/js/modules/site-chrome.js"></script>
+  <script src="/assets/js/modules/links.js"></script>
+  <script src="/assets/js/modules/people.js"></script>
+  <script src="/assets/js/modules/music-assistant.js"></script>
+  <script src="/assets/js/pages/comunidade.js"></script>
+  <script src="/assets/js/core/pwa.js"></script>
+</body>
+
+</html>

@@ -4,8 +4,10 @@ const cors = require("cors");
 const config = require("./src/config");
 const authRoutes = require("./src/routes/auth");
 const itunesRoutes = require("./src/routes/itunes");
-const { libraryRouter, usersRouter } = require("./src/routes/library");
+const { libraryRouter } = require("./src/routes/library");
+const { feedRouter, usersRouter } = require("./src/routes/users");
 const { migrate } = require("./src/db/library");
+const social = require("./src/db/social");
 const { isDatabaseConnectionError } = require("./src/db/errors");
 // Vercel serverless handlers, mounted here so local dev and non-Vercel hosts serve them too.
 const musicAiHandler = require("./api/musicai");
@@ -23,6 +25,8 @@ const PAGE_ROUTES = new Map([
   ["/banda", "banda.html"],
   ["/sobre", "sobre.html"],
   ["/usuario", "usuario.html"],
+  ["/comunidade", "comunidade.html"],
+  ["/retrospectiva", "retrospectiva.html"],
   ["/offline", "offline.html"]
 ]);
 const PUBLIC_FILES = new Set([
@@ -34,6 +38,8 @@ const PUBLIC_FILES = new Set([
   "/banda.html",
   "/sobre.html",
   "/usuario.html",
+  "/comunidade.html",
+  "/retrospectiva.html",
   "/offline.html",
   "/service-worker.js",
   "/site.webmanifest",
@@ -128,7 +134,7 @@ app.use(
     origin(origin, callback) {
       callback(null, isCorsOriginAllowed(origin));
     },
-    methods: ["GET", "POST", "PUT", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     maxAge: 600
   })
@@ -160,6 +166,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/itunes", itunesRoutes);
 app.use("/api/library", libraryRouter);
 app.use("/api/users", usersRouter);
+app.use("/api/feed", feedRouter);
 app.all("/api/musicai", musicAiHandler);
 app.get("/api/charts", chartsHandler);
 
@@ -234,9 +241,11 @@ app.use((error, req, res, next) => {
 });
 
 if (require.main === module) {
-  migrate().catch((error) => {
-    console.error("[wikiband] nao foi possivel preparar a tabela da biblioteca:", error.message);
-  });
+  migrate()
+    .then(social.migrate)
+    .catch((error) => {
+      console.error("[wikiband] nao foi possivel preparar as tabelas:", error.message);
+    });
 
   app.listen(config.port, () => {
     console.log(`[wikiband] servidor rodando em http://localhost:${config.port}`);

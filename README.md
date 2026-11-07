@@ -9,8 +9,9 @@ Wikiband é uma vitrine de música: um lugar para conhecer artistas, ouvir prév
 - **Página de artista**: biografia (Wikipédia), músicas populares, discografia completa e prévias.
 - **Player** com fila, rádio dos resultados, rádio dos favoritos e "tocar o ranking".
 - **Biblioteca na nuvem**: favoritos, coleções, histórico e reproduções sincronizados entre dispositivos.
-- **Retrospectiva**: artista, gênero e década favoritos, com compartilhamento.
+- **Retrospectiva** (`/retrospectiva.html`): slides no estilo Stories com artistas, gêneros, década e álbuns do ano, e uma imagem 1080×1920 pronta para postar no Story do Instagram.
 - **Perfil público** opcional (`/usuario.html?u=seu_usuario`), privado por padrão.
+- **Comunidade** (`/comunidade.html`): seguir pessoas, ver seguidores/seguindo, buscar perfis e acompanhar a atividade de quem você segue.
 - **MusicAI**: assistente com IA que responde, recomenda e **monta playlists** que tocam direto no player.
 - **Tema escuro e claro**, layout responsivo com barra de abas no celular e PWA.
 
@@ -30,7 +31,7 @@ npm run dev            # http://localhost:3000
 npm test               # testes da API com Postgres em memória
 ```
 
-A tabela `USUARIO_BIBLIOTECA` é criada automaticamente na primeira inicialização do backend.
+As tabelas `USUARIO_BIBLIOTECA` e `SEGUIDORES` são criadas automaticamente na inicialização do backend.
 
 ## Variáveis de ambiente
 
@@ -63,7 +64,8 @@ Para uma API com formato diferente, escreva um adaptador em `api/_lib/ai.js` e r
 - Rate limit por IP real (repassado pelo proxy com segredo compartilhado), por e-mail no login e por rota.
 - CSP restritiva, HSTS, `X-Frame-Options`, `nosniff`, arquivos públicos em lista fechada.
 - Proxy da Vercel com lista fechada de rotas e métodos.
-- Perfil público só expõe campos selecionados (nunca o e-mail) e responde igual para perfil inexistente ou privado.
+- Perfil público só expõe campos selecionados (nunca o e-mail) e responde igual para perfil inexistente ou privado. Só perfis públicos podem ser seguidos e aparecer em listas e buscas.
+- Troca de senha exige a senha atual digitada (sem preenchimento automático) e uma nova senha diferente.
 - MusicAI recusa chamadas de outros sites e tem limite de mensagens.
 
 ## Status

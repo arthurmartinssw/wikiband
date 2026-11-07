@@ -61,6 +61,16 @@
       "source": "/usuario.html",
       "destination": "/usuario",
       "permanent": true
+    },
+    {
+      "source": "/comunidade.html",
+      "destination": "/comunidade",
+      "permanent": true
+    },
+    {
+      "source": "/retrospectiva.html",
+      "destination": "/retrospectiva",
+      "permanent": true
     }
   ],
   "rewrites": [
@@ -99,6 +109,18 @@
     {
       "source": "/api/users/:username",
       "destination": "/api/proxy?path=users/:username"
+    },
+    {
+      "source": "/api/users",
+      "destination": "/api/proxy?path=users"
+    },
+    {
+      "source": "/api/feed",
+      "destination": "/api/proxy?path=feed"
+    },
+    {
+      "source": "/api/users/:username/:action",
+      "destination": "/api/proxy?path=users/:username/:action"
     }
   ]
 }
